@@ -1,0 +1,25 @@
+name: maihongo
+description: Japanese vocabulary learning app — Flutter starter generated from Figma Make.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flip_card: ^0.7.0          # optional alt to built-in flip widget
+  confetti: ^0.8.0           # quiz result celebration
+  shared_preferences: ^2.2.2 # offline preferences
+  isar: ^3.1.0               # offline vocab storage (or drift)
+  isar_flutter_libs: ^3.1.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.9
+  isar_generator: ^3.1.0
+
+flutter:
+  uses-material-design: true
