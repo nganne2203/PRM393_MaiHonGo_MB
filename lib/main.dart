@@ -31,7 +31,8 @@ class SakuraApp extends StatelessWidget {
       ),
       navigatorKey: _GlobalKey.navKey,
       routes: {
-        '/onboarding': (c) => OnboardingScreen(onDone: () => _nav(c, '/login', replace: true)),
+        '/onboarding': (c) =>
+            OnboardingScreen(onDone: () => _nav(c, '/login', replace: true)),
         '/login': (c) => LoginScreen(
               onLogin: () => _nav(c, '/main', replace: true),
               onRegister: () => _nav(c, '/register'),
@@ -42,22 +43,28 @@ class SakuraApp extends StatelessWidget {
             ),
         '/main': (_) => const MainShell(),
         '/flashcard': (_) => const FlashcardScreen(),
-        '/quiz': (c) => QuizScreen(onDone: (score) => Navigator.pushReplacementNamed(c, '/result', arguments: score)),
+        '/quiz': (c) => QuizScreen(
+            onDone: (score) =>
+                Navigator.pushReplacementNamed(c, '/result', arguments: score)),
         '/result': (c) {
           final score = (ModalRoute.of(c)!.settings.arguments as int?) ?? 8;
           return ResultScreen(
-            score: score, total: 10,
+            score: score,
+            total: 10,
             onRetry: () => _nav(c, '/quiz', replace: true),
             onContinue: () => _nav(c, '/main', replace: true),
           );
         },
-        '/settings': (c) => SettingsScreen(onLogout: () => _nav(c, '/login', replace: true)),
+        '/settings': (c) =>
+            SettingsScreen(onLogout: () => _nav(c, '/login', replace: true)),
       },
     );
   }
 
   void _nav(BuildContext c, String route, {bool replace = false}) {
-    replace ? Navigator.pushReplacementNamed(c, route) : Navigator.pushNamed(c, route);
+    replace
+        ? Navigator.pushReplacementNamed(c, route)
+        : Navigator.pushNamed(c, route);
   }
 }
 
@@ -77,27 +84,40 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      HomeScreen(onStartLesson: () => Navigator.pushNamed(context, '/flashcard')),
-      CategoriesScreen(onPick: (_) => Navigator.push(
-        context, MaterialPageRoute(
-          builder: (_) => Scaffold(
-            backgroundColor: AppColors.bg,
-            body: VocabScreen(onStart: () => Navigator.pushNamed(context, '/flashcard')),
-          ),
-        ),
-      )),
+      HomeScreen(
+        onStartLesson: () => Navigator.pushNamed(context, '/flashcard'),
+        onSeeAllPractice: () => setState(() => _index = 1),
+        onStartQuiz: () => Navigator.pushNamed(context, '/quiz'),
+        onOpenSaved: () => setState(() => _index = 2),
+      ),
+      CategoriesScreen(
+          onPick: (_) => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    backgroundColor: AppColors.bg,
+                    body: VocabScreen(
+                        onStart: () =>
+                            Navigator.pushNamed(context, '/flashcard')),
+                  ),
+                ),
+              )),
       SavedScreen(onReview: () => Navigator.pushNamed(context, '/flashcard')),
-      ProfileScreen(onSettings: () => Navigator.pushNamed(context, '/settings')),
+      ProfileScreen(
+          onSettings: () => Navigator.pushNamed(context, '/settings')),
     ];
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: pages[_index],
-      bottomNavigationBar: AppBottomNav(index: _index, onTap: (i) => setState(() => _index = i)),
+      bottomNavigationBar:
+          AppBottomNav(index: _index, onTap: (i) => setState(() => _index = i)),
       floatingActionButton: _index == 0
           ? FloatingActionButton.extended(
               backgroundColor: AppColors.primary,
               icon: const Icon(Icons.psychology_rounded, color: Colors.white),
-              label: const Text('Quiz', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+              label: const Text('Quiz',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w700)),
               onPressed: () => Navigator.pushNamed(context, '/quiz'),
             )
           : null,
