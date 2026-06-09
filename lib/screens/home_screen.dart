@@ -6,6 +6,7 @@ class HomeScreen extends StatelessWidget {
   final VoidCallback onStartLesson;
   final VoidCallback onSeeAllPractice;
   final VoidCallback onStartQuiz;
+  final VoidCallback onStartSpeaking;
   final VoidCallback onOpenSaved;
 
   const HomeScreen({
@@ -13,6 +14,7 @@ class HomeScreen extends StatelessWidget {
     required this.onStartLesson,
     required this.onSeeAllPractice,
     required this.onStartQuiz,
+    required this.onStartSpeaking,
     required this.onOpenSaved,
   });
 
@@ -178,6 +180,19 @@ class HomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     _practiceCard(
+                      icon: Icons.mic_rounded,
+                      iconBg: AppColors.goldSoft,
+                      iconFg: AppColors.gold,
+                      title: 'Speaking',
+                      subtitle: 'AI review',
+                      onTap: onStartSpeaking,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _practiceCard(
                       icon: Icons.bookmark_rounded,
                       iconBg: AppColors.sakuraSoft,
                       iconFg: AppColors.sakura,
@@ -185,6 +200,8 @@ class HomeScreen extends StatelessWidget {
                       subtitle: '32 bookmarks',
                       onTap: onOpenSaved,
                     ),
+                    const SizedBox(width: 12),
+                    const Expanded(child: SizedBox.shrink()),
                   ],
                 ),
               ],

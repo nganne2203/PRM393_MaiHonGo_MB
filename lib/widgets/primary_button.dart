@@ -6,7 +6,8 @@ class PrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final IconData? trailingIcon;
-  const PrimaryButton({super.key, required this.label, required this.onTap, this.trailingIcon});
+  const PrimaryButton(
+      {super.key, required this.label, required this.onTap, this.trailingIcon});
 
   @override
   Widget build(BuildContext context) {
@@ -23,9 +24,12 @@ class PrimaryButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(label, style: AppTextStyles.body.copyWith(
-                color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700,
-              )),
+              Text(label,
+                  style: AppTextStyles.body.copyWith(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  )),
               if (trailingIcon != null) ...[
                 const SizedBox(width: 8),
                 Icon(trailingIcon, color: Colors.white, size: 18),
@@ -55,7 +59,9 @@ class GhostButton extends StatelessWidget {
           border: Border.all(color: AppColors.line),
         ),
         alignment: Alignment.center,
-        child: Text(label, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700, fontSize: 14)),
+        child: Text(label,
+            style: AppTextStyles.body
+                .copyWith(fontWeight: FontWeight.w700, fontSize: 14)),
       ),
     );
   }
