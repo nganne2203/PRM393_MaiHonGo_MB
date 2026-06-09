@@ -1,29 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../core/network/api_client.dart';
-import '../core/network/auth_api.dart';
+import '../features/auth/state/auth_state.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_input.dart';
 import '../widgets/primary_button.dart';
 
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   final VoidCallback onDone;
   final VoidCallback onLogin;
   const RegisterScreen(
       {super.key, required this.onDone, required this.onLogin});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _u = TextEditingController(text: 'sakura_san');
   final _e = TextEditingController(
     text: 'sakura_${DateTime.now().millisecondsSinceEpoch}@sakura.app',
   );
   final _p = TextEditingController(text: 'strongpass');
   final _c = TextEditingController(text: 'strongpass');
-  final _authApi = AuthApi();
   bool _loading = false;
   String? _error;
 
@@ -37,11 +38,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _error = null;
     });
     try {
-      await _authApi.register(
-        displayName: _u.text.trim(),
-        email: _e.text.trim(),
-        password: _p.text,
-      );
+      await ref.read(authControllerProvider.notifier).register(
+            name: _u.text.trim(),
+            email: _e.text.trim(),
+            password: _p.text,
+          );
       widget.onDone();
     } catch (error) {
       setState(() => _error = ApiClient.describeError(error));
@@ -114,29 +115,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
-Widget _socialBtn(Widget child) => Container(
-      height: 48,
-      decoration: BoxDecoration(
-          color: AppColors.inputBg,
-          borderRadius: BorderRadius.circular(AppRadius.md)),
-      alignment: Alignment.center,
-      child: child,
+Widget _socialBtn(Widget child, {VoidCallback? onTap}) => GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+            color: AppColors.inputBg,
+            borderRadius: BorderRadius.circular(AppRadius.md)),
+        alignment: Alignment.center,
+        child: child,
+      ),
     );
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   final VoidCallback onLogin;
   final VoidCallback onRegister;
+  final VoidCallback onForgotPassword;
   const LoginScreen(
-      {super.key, required this.onLogin, required this.onRegister});
+      {super.key,
+      required this.onLogin,
+      required this.onRegister,
+      required this.onForgotPassword});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _email = TextEditingController(text: 'hello@sakura.app');
   final _password = TextEditingController(text: 'strongpass');
-  final _authApi = AuthApi();
   bool _loading = false;
   String? _error;
 
@@ -146,7 +153,25 @@ class _LoginScreenState extends State<LoginScreen> {
       _error = null;
     });
     try {
-      await _authApi.login(email: _email.text.trim(), password: _password.text);
+      await ref.read(authControllerProvider.notifier).login(
+            email: _email.text.trim(),
+            password: _password.text,
+          );
+      widget.onLogin();
+    } catch (error) {
+      setState(() => _error = ApiClient.describeError(error));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _googleLogin() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await ref.read(authControllerProvider.notifier).loginWithGoogle();
       widget.onLogin();
     } catch (error) {
       setState(() => _error = ApiClient.describeError(error));
@@ -198,7 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: widget.onForgotPassword,
                   child: const Text('Forgot password?',
                       style: TextStyle(
                           color: AppColors.primary,
@@ -230,11 +255,13 @@ class _LoginScreenState extends State<LoginScreen> {
               Row(
                 children: [
                   Expanded(
-                      child: _socialBtn(const Text('G',
-                          style: TextStyle(
-                              color: Color(0xFFEA4335),
-                              fontWeight: FontWeight.w800,
-                              fontSize: 20)))),
+                      child: _socialBtn(
+                          const Text('G',
+                              style: TextStyle(
+                                  color: Color(0xFFEA4335),
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 20)),
+                          onTap: _loading ? null : _googleLogin)),
                   const SizedBox(width: 12),
                   Expanded(
                       child: _socialBtn(const Icon(Icons.apple,
@@ -267,6 +294,145 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ForgotPasswordScreen extends ConsumerStatefulWidget {
+  final VoidCallback onBack;
+  const ForgotPasswordScreen({super.key, required this.onBack});
+
+  @override
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
+}
+
+class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
+  final _email = TextEditingController();
+  bool _loading = false;
+  String? _error;
+  bool _sent = false;
+
+  Future<void> _submit() async {
+    final email = _email.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _error = 'Please enter a valid email address.');
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await ref.read(authRepositoryProvider).forgotPassword(email);
+      if (mounted) setState(() => _sent = true);
+    } catch (error) {
+      if (mounted) setState(() => _error = ApiClient.describeError(error));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                    onPressed: widget.onBack,
+                    child: Text('← Back to login',
+                        style: AppTextStyles.caption
+                            .copyWith(fontWeight: FontWeight.w600))),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: AppColors.primarySoft,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                alignment: Alignment.center,
+                child: const Icon(Icons.lock_reset_rounded,
+                    color: AppColors.primary, size: 28),
+              ),
+              const SizedBox(height: 24),
+              Text('Forgot password?',
+                  style: AppTextStyles.h1.copyWith(fontSize: 26)),
+              const SizedBox(height: 8),
+              Text(
+                  'Enter your email and we\'ll send you instructions to reset your password.',
+                  style:
+                      AppTextStyles.body.copyWith(color: AppColors.mute, height: 1.5)),
+              const SizedBox(height: 32),
+              if (_sent) ...[
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.matchaSoft,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(
+                        color: AppColors.matcha.withValues(alpha: 0.3)),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.mark_email_read_rounded,
+                          color: AppColors.matcha, size: 40),
+                      const SizedBox(height: 12),
+                      Text('Check your email',
+                          style: AppTextStyles.h3
+                              .copyWith(color: AppColors.matcha)),
+                      const SizedBox(height: 8),
+                      Text(
+                        'We sent a password reset link to\n${_email.text.trim()}',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.body
+                            .copyWith(color: AppColors.mute, height: 1.5),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                PrimaryButton(
+                    label: 'Back to Login', onTap: widget.onBack),
+                const SizedBox(height: 16),
+                Center(
+                  child: TextButton(
+                    onPressed: () => setState(() => _sent = false),
+                    child: Text('Didn\'t receive? Try again',
+                        style: AppTextStyles.caption.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ] else ...[
+                AppInput(
+                    hint: 'Email address',
+                    icon: Icons.mail_outline_rounded,
+                    controller: _email),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(_error!,
+                      style: const TextStyle(
+                          color: AppColors.sakura,
+                          fontWeight: FontWeight.w700)),
+                ],
+                const SizedBox(height: 24),
+                PrimaryButton(
+                    label: _loading ? 'Sending...' : 'Send Reset Link',
+                    onTap: _loading ? () {} : _submit),
+              ],
             ],
           ),
         ),

@@ -1,16 +1,19 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-class ApiException implements Exception {
-  final String message;
-  final int? statusCode;
+import '../config/app_config.dart';
+import '../errors/app_exception.dart';
+import '../storage/token_storage.dart';
 
-  const ApiException(this.message, {this.statusCode});
+class ApiException extends AppException {
+  const ApiException(super.message, {super.statusCode});
+}
 
-  @override
-  String toString() => message;
+Map<String, dynamic> asJsonMap(dynamic value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) {
+    return value.map((key, value) => MapEntry(key.toString(), value));
+  }
+  throw const ApiException('Backend response is invalid.');
 }
 
 String? _extractErrorMessage(dynamic data) {
@@ -44,66 +47,74 @@ class ApiEnvelope {
   }
 }
 
-class AuthTokenStorage {
-  static const _secureStorage = FlutterSecureStorage();
-
-  const AuthTokenStorage();
-
-  bool get _useSharedPreferences =>
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.macOS;
-
-  Future<String?> read({required String key}) async {
-    if (_useSharedPreferences) {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getString(key);
-    }
-    return _secureStorage.read(key: key);
-  }
-
-  Future<void> write({required String key, required String value}) async {
-    if (_useSharedPreferences) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(key, value);
-      return;
-    }
-    await _secureStorage.write(key: key, value: value);
-  }
-
-  Future<void> delete({required String key}) async {
-    if (_useSharedPreferences) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(key);
-      return;
-    }
-    await _secureStorage.delete(key: key);
-  }
-}
-
 class ApiClient {
-  static const _configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
-
-  static String get _platformBaseUrl {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:8080';
-    }
-    return 'http://localhost:8080';
-  }
-
-  static String get defaultBaseUrl =>
-      _configuredBaseUrl.isNotEmpty ? _configuredBaseUrl : _platformBaseUrl;
-  static const tokenKey = 'auth_token';
+  static String get defaultBaseUrl => AppConfig.apiBaseUrl;
+  static const tokenKey = TokenStorage.legacyTokenKey;
 
   final Dio dio;
-  final AuthTokenStorage secureStorage;
+  final TokenStorage tokenStorage;
+
+  ApiClient({
+    Dio? dio,
+    TokenStorage? tokenStorage,
+  })  : dio = dio ??
+            Dio(
+              BaseOptions(
+                baseUrl: defaultBaseUrl,
+                connectTimeout: const Duration(seconds: 15),
+                receiveTimeout: const Duration(seconds: 60),
+              ),
+            ),
+        tokenStorage = tokenStorage ?? const TokenStorage() {
+    this.dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) async {
+              final token = await this.tokenStorage.readAccessToken();
+              if (token != null && token.isNotEmpty) {
+                options.headers['Authorization'] = 'Bearer $token';
+              }
+              handler.next(options);
+            },
+            onError: (error, handler) async {
+              if (await _shouldRefresh(error)) {
+                final refreshed = await _refreshTokens();
+                if (refreshed) {
+                  final response = await _retry(error.requestOptions);
+                  handler.resolve(response);
+                  return;
+                }
+                await this.tokenStorage.clear();
+              }
+
+              final apiError = toApiException(error);
+              handler.reject(
+                DioException(
+                  requestOptions: error.requestOptions,
+                  response: error.response,
+                  type: error.type,
+                  error: apiError,
+                  message: apiError.message,
+                ),
+              );
+            },
+          ),
+        );
+  }
 
   static ApiException toApiException(
     Object error, {
     String fallbackMessage = 'Request failed.',
   }) {
     if (error is ApiException) return error;
+    if (error is AppException) {
+      return ApiException(error.message, statusCode: error.statusCode);
+    }
     if (error is DioException) {
       final nested = error.error;
       if (nested is ApiException) return nested;
+      if (nested is AppException) {
+        return ApiException(nested.message, statusCode: nested.statusCode);
+      }
 
       return ApiException(
         _extractErrorMessage(error.response?.data) ??
@@ -117,48 +128,81 @@ class ApiClient {
 
   static String describeError(Object error) => toApiException(error).message;
 
-  ApiClient({
-    Dio? dio,
-    AuthTokenStorage? secureStorage,
-  })  : dio = dio ??
-            Dio(
-              BaseOptions(
-                baseUrl: defaultBaseUrl,
-                connectTimeout: const Duration(seconds: 15),
-                receiveTimeout: const Duration(seconds: 60),
-              ),
-            ),
-        secureStorage = secureStorage ?? const AuthTokenStorage() {
-    this.dio.interceptors.add(
-          InterceptorsWrapper(
-            onRequest: (options, handler) async {
-              final token = await this.secureStorage.read(key: tokenKey);
-              if (token != null && token.isNotEmpty) {
-                options.headers['Authorization'] = 'Bearer $token';
-              }
-              handler.next(options);
-            },
-            onError: (error, handler) {
-              final data = error.response?.data;
-              final message = _extractErrorMessage(data);
-              if (message != null) {
-                handler.reject(
-                  DioException(
-                    requestOptions: error.requestOptions,
-                    response: error.response,
-                    type: error.type,
-                    error: ApiException(
-                      message,
-                      statusCode: error.response?.statusCode,
-                    ),
-                    message: message,
-                  ),
-                );
-                return;
-              }
-              handler.next(error);
-            },
-          ),
-        );
+  Future<bool> _shouldRefresh(DioException error) async {
+    if (error.response?.statusCode != 401) return false;
+    if (error.requestOptions.extra['authRetry'] == true) return false;
+    if (error.requestOptions.path.contains('/auth/refresh-token')) {
+      return false;
+    }
+    final refreshToken = await tokenStorage.readRefreshToken();
+    return refreshToken != null && refreshToken.isNotEmpty;
+  }
+
+  Future<bool> _refreshTokens() async {
+    final refreshToken = await tokenStorage.readRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) return false;
+
+    try {
+      final refreshDio = Dio(
+        BaseOptions(
+          baseUrl: defaultBaseUrl,
+          connectTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 60),
+        ),
+      );
+      final response = await refreshDio.post(
+        '/auth/refresh-token',
+        data: {'refreshToken': refreshToken},
+      );
+      final data = ApiEnvelope.unwrapData(asJsonMap(response.data));
+      if (data is! Map) return false;
+      final accessToken =
+          data['accessToken']?.toString() ?? data['token']?.toString();
+      final newRefreshToken = data['refreshToken']?.toString();
+      if (accessToken == null ||
+          accessToken.isEmpty ||
+          newRefreshToken == null ||
+          newRefreshToken.isEmpty) {
+        return false;
+      }
+      await tokenStorage.saveTokens(
+        accessToken: accessToken,
+        refreshToken: newRefreshToken,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<Response<dynamic>> _retry(RequestOptions requestOptions) async {
+    final accessToken = await tokenStorage.readAccessToken();
+    final headers = Map<String, dynamic>.from(requestOptions.headers);
+    if (accessToken != null && accessToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $accessToken';
+    }
+
+    final options = Options(
+      method: requestOptions.method,
+      headers: headers,
+      responseType: requestOptions.responseType,
+      contentType: requestOptions.contentType,
+      followRedirects: requestOptions.followRedirects,
+      receiveDataWhenStatusError: requestOptions.receiveDataWhenStatusError,
+      extra: {
+        ...requestOptions.extra,
+        'authRetry': true,
+      },
+    );
+
+    return dio.request<dynamic>(
+      requestOptions.path,
+      data: requestOptions.data,
+      queryParameters: requestOptions.queryParameters,
+      options: options,
+      cancelToken: requestOptions.cancelToken,
+      onReceiveProgress: requestOptions.onReceiveProgress,
+      onSendProgress: requestOptions.onSendProgress,
+    );
   }
 }
