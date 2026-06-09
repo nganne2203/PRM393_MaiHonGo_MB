@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiException implements Exception {
   final String message;
@@ -42,15 +44,57 @@ class ApiEnvelope {
   }
 }
 
+class AuthTokenStorage {
+  static const _secureStorage = FlutterSecureStorage();
+
+  const AuthTokenStorage();
+
+  bool get _useSharedPreferences =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.macOS;
+
+  Future<String?> read({required String key}) async {
+    if (_useSharedPreferences) {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(key);
+    }
+    return _secureStorage.read(key: key);
+  }
+
+  Future<void> write({required String key, required String value}) async {
+    if (_useSharedPreferences) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(key, value);
+      return;
+    }
+    await _secureStorage.write(key: key, value: value);
+  }
+
+  Future<void> delete({required String key}) async {
+    if (_useSharedPreferences) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(key);
+      return;
+    }
+    await _secureStorage.delete(key: key);
+  }
+}
+
 class ApiClient {
-  static const defaultBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:8080',
-  );
+  static const _configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
+
+  static String get _platformBaseUrl {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:8080';
+    }
+    return 'http://localhost:8080';
+  }
+
+  static String get defaultBaseUrl =>
+      _configuredBaseUrl.isNotEmpty ? _configuredBaseUrl : _platformBaseUrl;
   static const tokenKey = 'auth_token';
 
   final Dio dio;
-  final FlutterSecureStorage secureStorage;
+  final AuthTokenStorage secureStorage;
 
   static ApiException toApiException(
     Object error, {
@@ -75,7 +119,7 @@ class ApiClient {
 
   ApiClient({
     Dio? dio,
-    FlutterSecureStorage? secureStorage,
+    AuthTokenStorage? secureStorage,
   })  : dio = dio ??
             Dio(
               BaseOptions(
@@ -84,7 +128,7 @@ class ApiClient {
                 receiveTimeout: const Duration(seconds: 60),
               ),
             ),
-        secureStorage = secureStorage ?? const FlutterSecureStorage() {
+        secureStorage = secureStorage ?? const AuthTokenStorage() {
     this.dio.interceptors.add(
           InterceptorsWrapper(
             onRequest: (options, handler) async {
