@@ -9,8 +9,12 @@ class AppInput extends StatefulWidget {
   final bool valid;
   final TextEditingController? controller;
   const AppInput({
-    super.key, required this.hint, required this.icon,
-    this.obscure = false, this.valid = false, this.controller,
+    super.key,
+    required this.hint,
+    required this.icon,
+    this.obscure = false,
+    this.valid = false,
+    this.controller,
   });
 
   @override
@@ -32,15 +36,20 @@ class _AppInputState extends State<AppInput> {
         prefixIcon: Icon(widget.icon, color: AppColors.mute, size: 18),
         suffixIcon: widget.obscure
             ? IconButton(
-                icon: Icon(_hide ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                    color: AppColors.mute, size: 18),
+                icon: Icon(
+                    _hide
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: AppColors.mute,
+                    size: 18),
                 onPressed: () => setState(() => _hide = !_hide),
               )
             : widget.valid
                 ? const Padding(
                     padding: EdgeInsets.only(right: 12),
                     child: CircleAvatar(
-                      radius: 10, backgroundColor: AppColors.matcha,
+                      radius: 10,
+                      backgroundColor: AppColors.matcha,
                       child: Icon(Icons.check, color: Colors.white, size: 12),
                     ),
                   )

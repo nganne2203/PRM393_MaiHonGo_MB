@@ -8,18 +8,26 @@ class ResultScreen extends StatefulWidget {
   final int score, total;
   final VoidCallback onRetry;
   final VoidCallback onContinue;
-  const ResultScreen({super.key, required this.score, required this.total,
-      required this.onRetry, required this.onContinue});
+  const ResultScreen(
+      {super.key,
+      required this.score,
+      required this.total,
+      required this.onRetry,
+      required this.onContinue});
 
   @override
   State<ResultScreen> createState() => _ResultScreenState();
 }
 
 class _ResultScreenState extends State<ResultScreen> {
-  late final _ctrl = ConfettiController(duration: const Duration(seconds: 2))..play();
+  late final _ctrl = ConfettiController(duration: const Duration(seconds: 2))
+    ..play();
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,16 +44,22 @@ class _ResultScreenState extends State<ResultScreen> {
             bottom: false,
             child: Column(children: [
               Container(
-                width: 96, height: 96,
-                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                width: 96,
+                height: 96,
+                decoration: const BoxDecoration(
+                    color: Colors.white, shape: BoxShape.circle),
                 alignment: Alignment.center,
                 child: const Text('🏆', style: TextStyle(fontSize: 50)),
               ),
               const SizedBox(height: 20),
-              Text('Excellent!', style: AppTextStyles.h1.copyWith(color: Colors.white, fontSize: 26)),
+              Text('Excellent!',
+                  style: AppTextStyles.h1
+                      .copyWith(color: Colors.white, fontSize: 26)),
               const SizedBox(height: 4),
               Text("You've completed the quiz",
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13)),
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 13)),
             ]),
           ),
         ),
@@ -66,13 +80,17 @@ class _ResultScreenState extends State<ResultScreen> {
                 ShaderMask(
                   shaderCallback: (r) => AppGradients.primary.createShader(r),
                   child: Text('${widget.score} / ${widget.total}',
-                      style: AppTextStyles.h1.copyWith(color: Colors.white, fontSize: 48, fontWeight: FontWeight.w800)),
+                      style: AppTextStyles.h1.copyWith(
+                          color: Colors.white,
+                          fontSize: 48,
+                          fontWeight: FontWeight.w800)),
                 ),
                 const SizedBox(height: 16),
                 Row(children: [
                   _stat('🎯', '$accuracy%', 'Accuracy', AppColors.sakuraSoft),
                   const SizedBox(width: 8),
-                  _stat('⚡', '+${widget.score * 15}', 'XP earned', AppColors.primarySoft),
+                  _stat('⚡', '+${widget.score * 15}', 'XP earned',
+                      AppColors.primarySoft),
                   const SizedBox(width: 8),
                   _stat('🏅', '3', 'Badges', AppColors.matchaSoft),
                 ]),
@@ -83,9 +101,14 @@ class _ResultScreenState extends State<ResultScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           child: Row(children: [
-            Expanded(child: GhostButton(label: '↻ Retry', onTap: widget.onRetry)),
+            Expanded(
+                child: GhostButton(label: '↻ Retry', onTap: widget.onRetry)),
             const SizedBox(width: 12),
-            Expanded(child: PrimaryButton(label: 'Continue', trailingIcon: Icons.arrow_forward_rounded, onTap: widget.onContinue)),
+            Expanded(
+                child: PrimaryButton(
+                    label: 'Continue',
+                    trailingIcon: Icons.arrow_forward_rounded,
+                    onTap: widget.onContinue)),
           ]),
         ),
       ]),
@@ -95,22 +118,31 @@ class _ResultScreenState extends State<ResultScreen> {
           confettiController: _ctrl,
           blastDirectionality: BlastDirectionality.explosive,
           numberOfParticles: 25,
-          colors: const [AppColors.sakura, AppColors.gold, AppColors.primary, AppColors.matcha],
+          colors: const [
+            AppColors.sakura,
+            AppColors.gold,
+            AppColors.primary,
+            AppColors.matcha
+          ],
         ),
       ),
     ]);
   }
 
   Widget _stat(String emoji, String value, String label, Color bg) => Expanded(
-    child: Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(AppRadius.lg)),
-      child: Column(children: [
-        Text(emoji, style: const TextStyle(fontSize: 18)),
-        const SizedBox(height: 6),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-        Text(label, style: const TextStyle(color: AppColors.mute, fontSize: 10)),
-      ]),
-    ),
-  );
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+              color: bg, borderRadius: BorderRadius.circular(AppRadius.lg)),
+          child: Column(children: [
+            Text(emoji, style: const TextStyle(fontSize: 18)),
+            const SizedBox(height: 6),
+            Text(value,
+                style:
+                    const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+            Text(label,
+                style: const TextStyle(color: AppColors.mute, fontSize: 10)),
+          ]),
+        ),
+      );
 }

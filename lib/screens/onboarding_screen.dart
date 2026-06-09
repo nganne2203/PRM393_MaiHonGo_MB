@@ -22,13 +22,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _i = 0;
 
   static const _slides = [
-    _Slide('🎴', 'Learn with Flashcards',
+    _Slide(
+        '🎴',
+        'Learn with Flashcards',
         'Master Kanji, Hiragana and Katakana with beautifully crafted flashcards.',
         AppGradients.sakura),
-    _Slide('🧠', 'Practice with Quizzes',
+    _Slide(
+        '🧠',
+        'Practice with Quizzes',
         'Test what you know with smart quizzes that adapt to your level.',
         AppGradients.sky),
-    _Slide('🏆', 'Track Your Progress',
+    _Slide(
+        '🏆',
+        'Track Your Progress',
         'Earn XP, build streaks and watch your Japanese skills bloom.',
         AppGradients.matcha),
   ];
@@ -42,7 +48,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: widget.onDone,
-              child: Text('Skip', style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w600)),
+              child: Text('Skip',
+                  style: AppTextStyles.caption
+                      .copyWith(fontWeight: FontWeight.w600)),
             ),
           ),
           Expanded(
@@ -58,20 +66,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        width: 256, height: 256,
+                        width: 256,
+                        height: 256,
                         decoration: BoxDecoration(
                           gradient: s.bg,
                           borderRadius: BorderRadius.circular(48),
                           boxShadow: AppShadows.elevated,
                         ),
                         alignment: Alignment.center,
-                        child: Text(s.emoji, style: const TextStyle(fontSize: 110)),
+                        child: Text(s.emoji,
+                            style: const TextStyle(fontSize: 110)),
                       ),
                       const SizedBox(height: 40),
-                      Text(s.title, style: AppTextStyles.h1, textAlign: TextAlign.center),
+                      Text(s.title,
+                          style: AppTextStyles.h1, textAlign: TextAlign.center),
                       const SizedBox(height: 12),
                       Text(s.desc,
-                          style: AppTextStyles.body.copyWith(color: AppColors.mute, height: 1.6),
+                          style: AppTextStyles.body
+                              .copyWith(color: AppColors.mute, height: 1.6),
                           textAlign: TextAlign.center),
                     ],
                   ),
@@ -81,15 +93,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(_slides.length, (idx) => AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              width: idx == _i ? 24 : 8, height: 8,
-              decoration: BoxDecoration(
-                color: idx == _i ? AppColors.primary : AppColors.line,
-                borderRadius: BorderRadius.circular(999),
-              ),
-            )),
+            children: List.generate(
+                _slides.length,
+                (idx) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: idx == _i ? 24 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: idx == _i ? AppColors.primary : AppColors.line,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    )),
           ),
           const SizedBox(height: 24),
           Padding(
@@ -102,7 +117,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   widget.onDone();
                 } else {
                   _ctrl.nextPage(
-                      duration: const Duration(milliseconds: 350), curve: Curves.easeOut);
+                      duration: const Duration(milliseconds: 350),
+                      curve: Curves.easeOut);
                 }
               },
             ),
