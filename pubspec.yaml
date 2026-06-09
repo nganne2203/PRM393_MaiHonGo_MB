@@ -10,16 +10,28 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flip_card: ^0.7.0          # optional alt to built-in flip widget
-  confetti: ^0.8.0           # quiz result celebration
-  shared_preferences: ^2.2.2 # offline preferences
-  isar: ^3.1.0               # offline vocab storage (or drift)
-  isar_flutter_libs: ^3.1.0
+
+  flip_card: ^0.7.0
+  confetti: ^0.8.0
+  shared_preferences: ^2.2.2
+  connectivity_plus: ^6.1.0
+  dio: ^5.7.0
+  flutter_secure_storage: ^9.2.2
+  http_parser: ^4.0.2
+  just_audio: ^0.9.42
+  path_provider: ^2.1.4
+  permission_handler: ^11.3.1
+  record: ^6.2.1
+
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
 
 dev_dependencies:
+  flutter_test:
+    sdk: flutter
   flutter_lints: ^6.0.0
   build_runner: ^2.4.9
-  isar_generator: ^3.1.0
+  isar_generator: ^3.1.0+1
 
 flutter:
   uses-material-design: true

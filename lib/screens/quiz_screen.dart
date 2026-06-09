@@ -51,7 +51,10 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   @override
-  void dispose() { _timer?.cancel(); super.dispose(); }
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,16 +68,24 @@ class _QuizScreenState extends State<QuizScreen> {
             Expanded(
               child: Center(
                 child: Text('Question ${_i + 1} / ${kQuestions.length}',
-                    style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700)),
+                    style: AppTextStyles.body
+                        .copyWith(fontWeight: FontWeight.w700)),
               ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppRadius.sm)),
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppRadius.sm)),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.timer_outlined, size: 14, color: AppColors.sakura),
+                const Icon(Icons.timer_outlined,
+                    size: 14, color: AppColors.sakura),
                 const SizedBox(width: 4),
-                Text('${_time}s', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.ink)),
+                Text('${_time}s',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: AppColors.ink)),
               ]),
             ),
           ]),
@@ -97,9 +108,13 @@ class _QuizScreenState extends State<QuizScreen> {
               boxShadow: AppShadows.elevated,
             ),
             child: Column(children: [
-              Text('WHAT DOES THIS MEAN?', style: AppTextStyles.overline.copyWith(color: Colors.white70)),
+              Text('WHAT DOES THIS MEAN?',
+                  style:
+                      AppTextStyles.overline.copyWith(color: Colors.white70)),
               const SizedBox(height: 12),
-              Text(q.kanji, style: AppTextStyles.jp(70, color: Colors.white, w: FontWeight.w900)),
+              Text(q.kanji,
+                  style: AppTextStyles.jp(70,
+                      color: Colors.white, w: FontWeight.w900)),
               const SizedBox(height: 6),
               Text(q.kana, style: AppTextStyles.jp(18, color: Colors.white70)),
             ]),
@@ -114,14 +129,28 @@ class _QuizScreenState extends State<QuizScreen> {
                 final isPicked = _picked == n;
                 final isCorrect = _picked != -1 && n == q.correct;
                 final isWrong = isPicked && n != q.correct;
-                final bg = isCorrect ? AppColors.matchaSoft : isWrong ? AppColors.sakuraSoft : Colors.white;
-                final border = isCorrect ? AppColors.matcha : isWrong ? AppColors.sakura : AppColors.line;
-                final badgeBg = isCorrect ? AppColors.matcha : isWrong ? AppColors.sakura : AppColors.inputBg;
-                final badgeFg = (isCorrect || isWrong) ? Colors.white : AppColors.mute;
+                final bg = isCorrect
+                    ? AppColors.matchaSoft
+                    : isWrong
+                        ? AppColors.sakuraSoft
+                        : Colors.white;
+                final border = isCorrect
+                    ? AppColors.matcha
+                    : isWrong
+                        ? AppColors.sakura
+                        : AppColors.line;
+                final badgeBg = isCorrect
+                    ? AppColors.matcha
+                    : isWrong
+                        ? AppColors.sakura
+                        : AppColors.inputBg;
+                final badgeFg =
+                    (isCorrect || isWrong) ? Colors.white : AppColors.mute;
                 return GestureDetector(
                   onTap: () => _choose(n),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
                       color: bg,
                       borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -129,16 +158,29 @@ class _QuizScreenState extends State<QuizScreen> {
                     ),
                     child: Row(children: [
                       Container(
-                        width: 32, height: 32,
-                        decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(AppRadius.sm)),
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                            color: badgeBg,
+                            borderRadius: BorderRadius.circular(AppRadius.sm)),
                         alignment: Alignment.center,
                         child: Text(String.fromCharCode(65 + n),
-                            style: TextStyle(color: badgeFg, fontWeight: FontWeight.w700, fontSize: 13)),
+                            style: TextStyle(
+                                color: badgeFg,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13)),
                       ),
                       const SizedBox(width: 12),
-                      Expanded(child: Text(q.options[n], style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600))),
-                      if (isCorrect) const Icon(Icons.check_rounded, color: AppColors.matcha),
-                      if (isWrong) const Icon(Icons.close_rounded, color: AppColors.sakura),
+                      Expanded(
+                          child: Text(q.options[n],
+                              style: AppTextStyles.body
+                                  .copyWith(fontWeight: FontWeight.w600))),
+                      if (isCorrect)
+                        const Icon(Icons.check_rounded,
+                            color: AppColors.matcha),
+                      if (isWrong)
+                        const Icon(Icons.close_rounded,
+                            color: AppColors.sakura),
                     ]),
                   ),
                 );

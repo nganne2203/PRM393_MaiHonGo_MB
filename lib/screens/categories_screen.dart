@@ -17,16 +17,21 @@ class CategoriesScreen extends StatelessWidget {
           children: [
             Text('Lessons', style: AppTextStyles.h1),
             const SizedBox(height: 4),
-            Text('Pick a category to start learning', style: AppTextStyles.caption),
+            Text('Pick a category to start learning',
+                style: AppTextStyles.caption),
             const SizedBox(height: 20),
             Expanded(
               child: GridView.builder(
                 padding: EdgeInsets.zero,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 0.95,
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 0.95,
                 ),
                 itemCount: kCategories.length,
-                itemBuilder: (_, i) => _CategoryCard(item: kCategories[i], onTap: () => onPick(kCategories[i])),
+                itemBuilder: (_, i) => _CategoryCard(
+                    item: kCategories[i], onTap: () => onPick(kCategories[i])),
               ),
             ),
           ],
@@ -51,7 +56,8 @@ class _CategoryCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment.topLeft, end: Alignment.bottomRight,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
                 colors: item.gradient.map((c) => Color(c)).toList(),
               ),
               borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -61,7 +67,8 @@ class _CategoryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 48, height: 48,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -70,8 +77,16 @@ class _CategoryCard extends StatelessWidget {
                   child: Text(item.emoji, style: const TextStyle(fontSize: 24)),
                 ),
                 const Spacer(),
-                Text(item.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
-                Text('${item.count} words', style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 11, fontWeight: FontWeight.w500)),
+                Text(item.name,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16)),
+                Text('${item.count} words',
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500)),
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(999),
@@ -83,7 +98,11 @@ class _CategoryCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text('${item.progress}%', style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 10, fontWeight: FontWeight.w600)),
+                Text('${item.progress}%',
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -97,8 +116,10 @@ class _CategoryCard extends StatelessWidget {
                 alignment: Alignment.topRight,
                 padding: const EdgeInsets.all(12),
                 child: const CircleAvatar(
-                  radius: 14, backgroundColor: Color(0x55000000),
-                  child: Icon(Icons.lock_rounded, color: Colors.white, size: 14),
+                  radius: 14,
+                  backgroundColor: Color(0x55000000),
+                  child:
+                      Icon(Icons.lock_rounded, color: Colors.white, size: 14),
                 ),
               ),
             ),

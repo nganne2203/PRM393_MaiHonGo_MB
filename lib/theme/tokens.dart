@@ -25,27 +25,33 @@ class AppColors {
 
 class AppGradients {
   static const primary = LinearGradient(
-    begin: Alignment.topLeft, end: Alignment.bottomRight,
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
     colors: [AppColors.primaryLight, AppColors.primary],
   );
   static const sakura = LinearGradient(
-    begin: Alignment.topLeft, end: Alignment.bottomRight,
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
     colors: [Color(0xFFFFB6C7), AppColors.sakura],
   );
   static const matcha = LinearGradient(
-    begin: Alignment.topLeft, end: Alignment.bottomRight,
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
     colors: [Color(0xFFA4DBA9), AppColors.matcha],
   );
   static const sky = LinearGradient(
-    begin: Alignment.topLeft, end: Alignment.bottomRight,
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
     colors: [Color(0xFFB6DDF9), AppColors.sky],
   );
   static const warm = LinearGradient(
-    begin: Alignment.topLeft, end: Alignment.bottomRight,
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
     colors: [Color(0xFFFFD2A1), Color(0xFFFFA871)],
   );
   static const bgPage = LinearGradient(
-    begin: Alignment.topCenter, end: Alignment.bottomCenter,
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
     colors: [Color(0xFFF4F0FF), AppColors.bg, Color(0xFFFFF4F8)],
   );
 }
@@ -73,19 +79,25 @@ class AppShadows {
   static List<BoxShadow> card = [
     BoxShadow(
       color: const Color(0xFF1F2138).withValues(alpha: 0.08),
-      blurRadius: 16, offset: const Offset(0, 4), spreadRadius: -6,
+      blurRadius: 16,
+      offset: const Offset(0, 4),
+      spreadRadius: -6,
     ),
   ];
   static List<BoxShadow> elevated = [
     BoxShadow(
       color: AppColors.primary.withValues(alpha: 0.4),
-      blurRadius: 40, offset: const Offset(0, 15), spreadRadius: -15,
+      blurRadius: 40,
+      offset: const Offset(0, 15),
+      spreadRadius: -15,
     ),
   ];
   static List<BoxShadow> button = [
     BoxShadow(
       color: AppColors.primary.withValues(alpha: 0.5),
-      blurRadius: 25, offset: const Offset(0, 10), spreadRadius: -5,
+      blurRadius: 25,
+      offset: const Offset(0, 10),
+      spreadRadius: -5,
     ),
   ];
 }
