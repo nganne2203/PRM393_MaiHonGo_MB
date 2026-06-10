@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'core/network/auth_api.dart';
 import 'theme/app_theme.dart';
 import 'theme/tokens.dart';
 import 'widgets/bottom_nav.dart';
@@ -14,11 +15,14 @@ import 'screens/result_screen.dart';
 import 'screens/saved_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
+import 'features/speaking/screens/speaking_practice_screen.dart';
 
 void main() => runApp(const SakuraApp());
 
 class SakuraApp extends StatelessWidget {
   const SakuraApp({super.key});
+
+  static final _authApi = AuthApi();
 
   @override
   Widget build(BuildContext context) {
@@ -27,18 +31,18 @@ class SakuraApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       home: SplashScreen(
-        onDone: () => _nav(_GlobalKey.navKey.currentContext!, '/onboarding'),
+        onDone: _openInitialRoute,
       ),
       navigatorKey: _GlobalKey.navKey,
       routes: {
         '/onboarding': (c) =>
             OnboardingScreen(onDone: () => _nav(c, '/login', replace: true)),
         '/login': (c) => LoginScreen(
-              onLogin: () => _nav(c, '/main', replace: true),
+              onLogin: () => _nav(c, '/main', clearStack: true),
               onRegister: () => _nav(c, '/register'),
             ),
         '/register': (c) => RegisterScreen(
-              onDone: () => _nav(c, '/main', replace: true),
+              onDone: () => _nav(c, '/main', clearStack: true),
               onLogin: () => Navigator.pop(c),
             ),
         '/main': (_) => const MainShell(),
@@ -55,16 +59,45 @@ class SakuraApp extends StatelessWidget {
             onContinue: () => _nav(c, '/main', replace: true),
           );
         },
-        '/settings': (c) =>
-            SettingsScreen(onLogout: () => _nav(c, '/login', replace: true)),
+        '/settings': (c) => SettingsScreen(onLogout: () async {
+              await _authApi.logout();
+              _navFromRoot('/login', clearStack: true);
+            }),
+        '/speaking': (_) => const SpeakingPracticeScreen(),
       },
     );
   }
 
-  void _nav(BuildContext c, String route, {bool replace = false}) {
-    replace
-        ? Navigator.pushReplacementNamed(c, route)
-        : Navigator.pushNamed(c, route);
+  Future<void> _openInitialRoute() async {
+    final hasToken = await _authApi.hasSavedToken();
+    _navFromRoot(hasToken ? '/main' : '/onboarding', clearStack: true);
+  }
+
+  void _navFromRoot(String route, {bool clearStack = false}) {
+    final navigator = _GlobalKey.navKey.currentState;
+    if (navigator == null) return;
+    if (clearStack) {
+      navigator.pushNamedAndRemoveUntil(route, (_) => false);
+      return;
+    }
+    navigator.pushNamed(route);
+  }
+
+  void _nav(
+    BuildContext c,
+    String route, {
+    bool replace = false,
+    bool clearStack = false,
+  }) {
+    if (clearStack) {
+      Navigator.pushNamedAndRemoveUntil(c, route, (_) => false);
+      return;
+    }
+    if (replace) {
+      Navigator.pushReplacementNamed(c, route);
+      return;
+    }
+    Navigator.pushNamed(c, route);
   }
 }
 
@@ -88,6 +121,7 @@ class _MainShellState extends State<MainShell> {
         onStartLesson: () => Navigator.pushNamed(context, '/flashcard'),
         onSeeAllPractice: () => setState(() => _index = 1),
         onStartQuiz: () => Navigator.pushNamed(context, '/quiz'),
+        onStartSpeaking: () => Navigator.pushNamed(context, '/speaking'),
         onOpenSaved: () => setState(() => _index = 2),
       ),
       CategoriesScreen(

@@ -10,9 +10,12 @@ const kVocab = <VocabItem>[
   VocabItem('水', 'みず', 'mizu', 'Nước', '水を飲みます。', 'Tôi uống nước.', 'N5'),
   VocabItem('本', 'ほん', 'hon', 'Sách', '本を読む。', 'Đọc sách.', 'N5'),
   VocabItem('学校', 'がっこう', 'gakkou', 'Trường học', '学校へ行く。', 'Đi học.', 'N5'),
-  VocabItem('友達', 'ともだち', 'tomodachi', 'Bạn bè', '友達と遊ぶ。', 'Chơi với bạn.', 'N4'),
-  VocabItem('電車', 'でんしゃ', 'densha', 'Tàu điện', '電車で行きます。', 'Đi bằng tàu.', 'N5'),
-  VocabItem('時間', 'じかん', 'jikan', 'Thời gian', '時間がない。', 'Không có thời gian.', 'N4'),
+  VocabItem(
+      '友達', 'ともだち', 'tomodachi', 'Bạn bè', '友達と遊ぶ。', 'Chơi với bạn.', 'N4'),
+  VocabItem(
+      '電車', 'でんしゃ', 'densha', 'Tàu điện', '電車で行きます。', 'Đi bằng tàu.', 'N5'),
+  VocabItem(
+      '時間', 'じかん', 'jikan', 'Thời gian', '時間がない。', 'Không có thời gian.', 'N4'),
 ];
 
 class CategoryItem {
@@ -20,7 +23,8 @@ class CategoryItem {
   final int count, progress;
   final List<int> gradient; // ARGB ints
   final bool locked;
-  const CategoryItem(this.name, this.emoji, this.count, this.progress, this.gradient, this.locked);
+  const CategoryItem(this.name, this.emoji, this.count, this.progress,
+      this.gradient, this.locked);
 }
 
 const kCategories = <CategoryItem>[
@@ -42,5 +46,6 @@ class QuizQuestion {
 const kQuestions = <QuizQuestion>[
   QuizQuestion('猫', 'ねこ', ['Chó', 'Mèo', 'Cá', 'Chim'], 1),
   QuizQuestion('水', 'みず', ['Lửa', 'Đất', 'Nước', 'Gió'], 2),
-  QuizQuestion('学校', 'がっこう', ['Bệnh viện', 'Trường học', 'Thư viện', 'Công ty'], 1),
+  QuizQuestion(
+      '学校', 'がっこう', ['Bệnh viện', 'Trường học', 'Thư viện', 'Công ty'], 1),
 ];

@@ -35,7 +35,8 @@ class AppBottomNav extends StatelessWidget {
                 children: [
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    width: active ? 48 : 40, height: 36,
+                    width: active ? 48 : 40,
+                    height: 36,
                     decoration: BoxDecoration(
                       gradient: active ? AppGradients.primary : null,
                       borderRadius: BorderRadius.circular(AppRadius.md),
@@ -51,8 +52,7 @@ class AppBottomNav extends StatelessWidget {
                     _tabs[i].$2,
                     style: TextStyle(
                       fontSize: 10,
-                      fontWeight:
-                          active ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                       color: active ? AppColors.primary : AppColors.mute,
                     ),
                   ),
