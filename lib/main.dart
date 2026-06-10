@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'core/network/auth_api.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import 'features/auth/state/auth_state.dart';
 import 'theme/app_theme.dart';
 import 'theme/tokens.dart';
 import 'widgets/bottom_nav.dart';
@@ -17,21 +20,40 @@ import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
 import 'features/speaking/screens/speaking_practice_screen.dart';
 
-void main() => runApp(const SakuraApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  debugPrint('[STARTUP] Step 1: Flutter binding initialized');
 
-class SakuraApp extends StatelessWidget {
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('[FLUTTER_ERROR] ${details.exceptionAsString()}');
+  };
+
+  try {
+    await dotenv.load(fileName: ".env");
+    debugPrint('[STARTUP] Step 2: dotenv loaded — keys: ${dotenv.env.keys}');
+  } catch (e, st) {
+    debugPrint('[STARTUP] Step 2: dotenv FAILED — $e');
+    debugPrint('$st');
+    // Continue without .env — the app can still function using --dart-define
+    // values or hardcoded defaults. Do NOT block the entire UI.
+  }
+
+  debugPrint('[STARTUP] Step 3: runApp');
+  runApp(const ProviderScope(child: SakuraApp()));
+}
+
+class SakuraApp extends ConsumerWidget {
   const SakuraApp({super.key});
 
-  static final _authApi = AuthApi();
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'Sakura',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       home: SplashScreen(
-        onDone: _openInitialRoute,
+        onDone: () => _openInitialRoute(ref),
       ),
       navigatorKey: _GlobalKey.navKey,
       routes: {
@@ -40,10 +62,14 @@ class SakuraApp extends StatelessWidget {
         '/login': (c) => LoginScreen(
               onLogin: () => _nav(c, '/main', clearStack: true),
               onRegister: () => _nav(c, '/register'),
+              onForgotPassword: () => _nav(c, '/forgot-password'),
             ),
         '/register': (c) => RegisterScreen(
               onDone: () => _nav(c, '/main', clearStack: true),
               onLogin: () => Navigator.pop(c),
+            ),
+        '/forgot-password': (c) => ForgotPasswordScreen(
+              onBack: () => Navigator.pop(c),
             ),
         '/main': (_) => const MainShell(),
         '/flashcard': (_) => const FlashcardScreen(),
@@ -60,7 +86,7 @@ class SakuraApp extends StatelessWidget {
           );
         },
         '/settings': (c) => SettingsScreen(onLogout: () async {
-              await _authApi.logout();
+              await ref.read(authControllerProvider.notifier).logout();
               _navFromRoot('/login', clearStack: true);
             }),
         '/speaking': (_) => const SpeakingPracticeScreen(),
@@ -68,9 +94,22 @@ class SakuraApp extends StatelessWidget {
     );
   }
 
-  Future<void> _openInitialRoute() async {
-    final hasToken = await _authApi.hasSavedToken();
-    _navFromRoot(hasToken ? '/main' : '/onboarding', clearStack: true);
+  Future<void> _openInitialRoute(WidgetRef ref) async {
+    debugPrint('[NAV] _openInitialRoute start');
+    bool isAuthenticated = false;
+    try {
+      isAuthenticated = await ref
+          .read(authControllerProvider.notifier)
+          .restoreSession()
+          .timeout(const Duration(seconds: 5));
+      debugPrint('[NAV] restoreSession result: $isAuthenticated');
+    } catch (e) {
+      debugPrint('[NAV] restoreSession failed/timed out: $e');
+      // On failure or timeout, treat as unauthenticated — show onboarding.
+    }
+    final route = isAuthenticated ? '/main' : '/onboarding';
+    debugPrint('[NAV] navigating to: $route');
+    _navFromRoot(route, clearStack: true);
   }
 
   void _navFromRoot(String route, {bool clearStack = false}) {
