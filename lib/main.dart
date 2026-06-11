@@ -19,6 +19,7 @@ import 'screens/saved_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
 import 'features/speaking/screens/speaking_practice_screen.dart';
+import 'features/offline/screens/offline_downloads_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,7 +74,10 @@ class SakuraApp extends ConsumerWidget {
             ),
         '/change-password': (_) => const ChangePasswordScreen(),
         '/main': (_) => const MainShell(),
-        '/flashcard': (_) => const FlashcardScreen(),
+        '/flashcard': (c) {
+          final lessonId = ModalRoute.of(c)?.settings.arguments as String?;
+          return FlashcardScreen(lessonId: lessonId);
+        },
         '/quiz': (c) => QuizScreen(
             onDone: (score) =>
                 Navigator.pushReplacementNamed(c, '/result', arguments: score)),
@@ -90,6 +94,7 @@ class SakuraApp extends ConsumerWidget {
               await ref.read(authControllerProvider.notifier).logout();
               _navFromRoot('/login', clearStack: true);
             }),
+        '/offline-downloads': (_) => const OfflineDownloadsScreen(),
         '/speaking': (_) => const SpeakingPracticeScreen(),
       },
     );
@@ -165,14 +170,19 @@ class _MainShellState extends State<MainShell> {
         onOpenSaved: () => setState(() => _index = 2),
       ),
       CategoriesScreen(
-          onPick: (_) => Navigator.push(
+          onPick: (lesson) => Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => Scaffold(
                     backgroundColor: AppColors.bg,
                     body: VocabScreen(
-                        onStart: () =>
-                            Navigator.pushNamed(context, '/flashcard')),
+                      lesson: lesson,
+                      onStart: () => Navigator.pushNamed(
+                        context,
+                        '/flashcard',
+                        arguments: lesson.id,
+                      ),
+                    ),
                   ),
                 ),
               )),

@@ -2,7 +2,20 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
-import '../data/vocab_data.dart';
+
+class _QuizQuestion {
+  final String kanji, kana;
+  final List<String> options;
+  final int correct;
+  const _QuizQuestion(this.kanji, this.kana, this.options, this.correct);
+}
+
+const _questions = <_QuizQuestion>[
+  _QuizQuestion('猫', 'ねこ', ['Chó', 'Mèo', 'Cá', 'Chim'], 1),
+  _QuizQuestion('水', 'みず', ['Lửa', 'Đất', 'Nước', 'Gió'], 2),
+  _QuizQuestion(
+      '学校', 'がっこう', ['Bệnh viện', 'Trường học', 'Thư viện', 'Công ty'], 1),
+];
 
 class QuizScreen extends StatefulWidget {
   final ValueChanged<int> onDone; // score
@@ -35,9 +48,9 @@ class _QuizScreenState extends State<QuizScreen> {
   void _choose(int n) {
     if (_picked != -1) return;
     setState(() => _picked = n);
-    if (n == kQuestions[_i].correct) _score++;
+    if (n == _questions[_i].correct) _score++;
     Future.delayed(const Duration(milliseconds: 1100), () {
-      if (_i < kQuestions.length - 1) {
+      if (_i < _questions.length - 1) {
         setState(() {
           _i++;
           _picked = -1;
@@ -58,7 +71,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final q = kQuestions[_i];
+    final q = _questions[_i];
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -67,7 +80,7 @@ class _QuizScreenState extends State<QuizScreen> {
             const BackButton(),
             Expanded(
               child: Center(
-                child: Text('Question ${_i + 1} / ${kQuestions.length}',
+                child: Text('Question ${_i + 1} / ${_questions.length}',
                     style: AppTextStyles.body
                         .copyWith(fontWeight: FontWeight.w700)),
               ),
@@ -93,7 +106,7 @@ class _QuizScreenState extends State<QuizScreen> {
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
-              value: (_i + 1) / kQuestions.length,
+              value: (_i + 1) / _questions.length,
               minHeight: 8,
               backgroundColor: AppColors.line,
               valueColor: const AlwaysStoppedAnimation(AppColors.primary),
