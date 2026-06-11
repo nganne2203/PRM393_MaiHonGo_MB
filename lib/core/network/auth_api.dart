@@ -1,5 +1,3 @@
-import 'package:dio/dio.dart';
-
 import 'api_client.dart';
 
 class AuthApi {
@@ -8,34 +6,27 @@ class AuthApi {
   AuthApi({ApiClient? apiClient}) : apiClient = apiClient ?? ApiClient();
 
   Future<bool> hasSavedToken() async {
-    final token = await apiClient.secureStorage.read(key: ApiClient.tokenKey);
-    return token != null && token.isNotEmpty;
+    return apiClient.tokenStorage.hasSession();
   }
 
   Future<void> logout() async {
-    await apiClient.secureStorage.delete(key: ApiClient.tokenKey);
+    try {
+      await apiClient.dio.post('/auth/logout');
+    } catch (_) {
+      // Clearing local tokens must still work if the access token is expired.
+    }
+    await apiClient.tokenStorage.clear();
   }
 
   Future<void> login({
     required String email,
     required String password,
   }) async {
-    try {
-      final response = await apiClient.dio.post(
-        '/auth/login',
-        data: {'email': email, 'password': password},
-      );
-      await _saveToken(response.data);
-    } on DioException catch (error) {
-      final apiError = ApiClient.toApiException(error);
-      if (apiError.statusCode == 401) {
-        throw const ApiException(
-          'Email or password is incorrect.',
-          statusCode: 401,
-        );
-      }
-      throw apiError;
-    }
+    final response = await apiClient.dio.post(
+      '/auth/login',
+      data: {'email': email, 'password': password},
+    );
+    await _saveToken(response.data);
   }
 
   Future<void> register({
@@ -43,26 +34,48 @@ class AuthApi {
     required String email,
     required String password,
   }) async {
-    try {
-      final response = await apiClient.dio.post(
-        '/auth/register',
-        data: {
-          'displayName': displayName,
-          'email': email,
-          'password': password,
-        },
-      );
-      await _saveToken(response.data);
-    } on DioException catch (error) {
-      final apiError = ApiClient.toApiException(error);
-      if (apiError.statusCode == 409) {
-        throw const ApiException(
-          'This email is already registered. Sign in or use a different email.',
-          statusCode: 409,
-        );
-      }
-      throw apiError;
-    }
+    final response = await apiClient.dio.post(
+      '/auth/register',
+      data: {
+        'name': displayName,
+        'displayName': displayName,
+        'email': email,
+        'password': password,
+      },
+    );
+    await _saveToken(response.data);
+  }
+
+  Future<void> forgotPassword(String email) async {
+    await apiClient.dio.post('/auth/forgot-password', data: {'email': email});
+  }
+
+  Future<void> resendResetCode(String email) async {
+    await apiClient.dio.post(
+      '/auth/resend-reset-code',
+      data: {'email': email},
+    );
+  }
+
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    await apiClient.dio.post(
+      '/auth/reset-password',
+      data: {'email': email, 'code': code, 'newPassword': newPassword},
+    );
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await apiClient.dio.post(
+      '/auth/change-password',
+      data: {'currentPassword': currentPassword, 'newPassword': newPassword},
+    );
   }
 
   Future<void> _saveToken(dynamic responseData) async {
@@ -71,10 +84,18 @@ class AuthApi {
           ? responseData
           : Map<String, dynamic>.from(responseData as Map),
     );
-    final token = data is Map ? data['token']?.toString() : null;
-    if (token == null || token.isEmpty) {
+    if (data is! Map) {
+      throw const ApiException('Backend auth response is invalid.');
+    }
+    final accessToken =
+        data['accessToken']?.toString() ?? data['token']?.toString();
+    final refreshToken = data['refreshToken']?.toString() ?? '';
+    if (accessToken == null || accessToken.isEmpty) {
       throw const ApiException('Backend did not return an auth token.');
     }
-    await apiClient.secureStorage.write(key: ApiClient.tokenKey, value: token);
+    await apiClient.tokenStorage.saveTokens(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    );
   }
 }

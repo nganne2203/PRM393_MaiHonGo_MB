@@ -80,6 +80,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               AppColors.goldSoft,
               'Privacy & Security',
               'Manage your data',
+              onTap: () => Navigator.pushNamed(context, '/change-password'),
             ),
             const SizedBox(height: 24),
             GestureDetector(
@@ -134,45 +135,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Widget leading,
     String label,
     String? sub,
-    Widget trailing,
-  ) =>
-      Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
-        child: Row(
-          children: [
-            leading,
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+    Widget trailing, {
+    VoidCallback? onTap,
+  }) {
+    final content = Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Row(
+        children: [
+          leading,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                if (sub != null)
                   Text(
-                    label,
+                    sub,
                     style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
+                      color: AppColors.mute,
+                      fontSize: 11,
                     ),
                   ),
-                  if (sub != null)
-                    Text(
-                      sub,
-                      style: const TextStyle(
-                        color: AppColors.mute,
-                        fontSize: 11,
-                      ),
-                    ),
-                ],
-              ),
+              ],
             ),
-            trailing,
-          ],
-        ),
-      );
+          ),
+          trailing,
+        ],
+      ),
+    );
+
+    if (onTap == null) return content;
+    return GestureDetector(onTap: onTap, child: content);
+  }
 
   Widget _icon(IconData icon, Color fg, Color bg) => Container(
         width: 40,
@@ -209,12 +215,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Color fg,
     Color bg,
     String label,
-    String sub,
-  ) =>
+    String sub, {
+    VoidCallback? onTap,
+  }) =>
       _row(
         _icon(icon, fg, bg),
         label,
         sub,
         const Icon(Icons.chevron_right_rounded, color: AppColors.mute),
+        onTap: onTap,
       );
 }
