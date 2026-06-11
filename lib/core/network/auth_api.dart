@@ -10,6 +10,11 @@ class AuthApi {
   }
 
   Future<void> logout() async {
+    try {
+      await apiClient.dio.post('/auth/logout');
+    } catch (_) {
+      // Clearing local tokens must still work if the access token is expired.
+    }
     await apiClient.tokenStorage.clear();
   }
 
@@ -39,6 +44,38 @@ class AuthApi {
       },
     );
     await _saveToken(response.data);
+  }
+
+  Future<void> forgotPassword(String email) async {
+    await apiClient.dio.post('/auth/forgot-password', data: {'email': email});
+  }
+
+  Future<void> resendResetCode(String email) async {
+    await apiClient.dio.post(
+      '/auth/resend-reset-code',
+      data: {'email': email},
+    );
+  }
+
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    await apiClient.dio.post(
+      '/auth/reset-password',
+      data: {'email': email, 'code': code, 'newPassword': newPassword},
+    );
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await apiClient.dio.post(
+      '/auth/change-password',
+      data: {'currentPassword': currentPassword, 'newPassword': newPassword},
+    );
   }
 
   Future<void> _saveToken(dynamic responseData) async {

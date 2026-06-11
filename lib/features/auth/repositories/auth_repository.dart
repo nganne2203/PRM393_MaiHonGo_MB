@@ -16,8 +16,7 @@ class AuthRepository {
   /// It is created lazily inside [loginWithGoogle] so that:
   ///   - The app never crashes at startup due to a missing clientId.
   ///   - Platform guards run only when the user actually taps "Sign in with Google".
-  AuthRepository({ApiClient? apiClient})
-      : apiClient = apiClient ?? ApiClient();
+  AuthRepository({ApiClient? apiClient}) : apiClient = apiClient ?? ApiClient();
 
   // ---------------------------------------------------------------------------
   // Google Sign-In helpers
@@ -42,7 +41,7 @@ class AuthRepository {
     if (clientId.isEmpty) {
       throw const AppException(
         'Google login is not configured. '
-        'Please provide GOOGLE_WEB_CLIENT_ID via --dart-define.',
+        'Please provide GOOGLE_WEB_CLIENT_ID in .env or via --dart-define.',
       );
     }
 
@@ -117,13 +116,31 @@ class AuthRepository {
     await apiClient.dio.post('/auth/forgot-password', data: {'email': email});
   }
 
+  Future<void> resendResetCode(String email) async {
+    await apiClient.dio.post(
+      '/auth/resend-reset-code',
+      data: {'email': email},
+    );
+  }
+
+  Future<void> verifyResetCode({
+    required String email,
+    required String code,
+  }) async {
+    await apiClient.dio.post(
+      '/auth/verify-reset-code',
+      data: {'email': email, 'code': code},
+    );
+  }
+
   Future<void> resetPassword({
-    required String token,
+    required String email,
+    required String code,
     required String newPassword,
   }) async {
     await apiClient.dio.post(
       '/auth/reset-password',
-      data: {'token': token, 'newPassword': newPassword},
+      data: {'email': email, 'code': code, 'newPassword': newPassword},
     );
   }
 
@@ -178,8 +195,10 @@ class AuthRepository {
     // Attempt a Google sign-out only when it is safe to do so.
     // Skip on macOS desktop and when no clientId is configured, because
     // _createGoogleSignIn() would throw and we still need to clear the session.
-    final bool googleSignOutSafe =
-        kIsWeb || (!kIsWeb && !Platform.isMacOS && AppConfig.googleWebClientId.isNotEmpty);
+    final bool googleSignOutSafe = kIsWeb ||
+        (!kIsWeb &&
+            !Platform.isMacOS &&
+            AppConfig.googleWebClientId.isNotEmpty);
 
     if (googleSignOutSafe) {
       try {
