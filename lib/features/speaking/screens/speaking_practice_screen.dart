@@ -13,7 +13,12 @@ class SpeakingPracticeScreen extends StatefulWidget {
     defaultValue: '',
   );
 
-  const SpeakingPracticeScreen({super.key});
+  final String? lessonId;
+
+  const SpeakingPracticeScreen({
+    super.key,
+    this.lessonId,
+  });
 
   @override
   State<SpeakingPracticeScreen> createState() => _SpeakingPracticeScreenState();
@@ -28,7 +33,9 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
     super.initState();
     _controller = SpeakingController();
     _lessonController = TextEditingController(
-      text: SpeakingPracticeScreen.defaultLessonId,
+      text: widget.lessonId?.isNotEmpty == true
+          ? widget.lessonId!
+          : SpeakingPracticeScreen.defaultLessonId,
     );
     if (_lessonController.text.isNotEmpty) {
       _controller.loadPrompts(_lessonController.text.trim());

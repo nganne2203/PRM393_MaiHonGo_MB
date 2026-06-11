@@ -95,7 +95,10 @@ class SakuraApp extends ConsumerWidget {
               _navFromRoot('/login', clearStack: true);
             }),
         '/offline-downloads': (_) => const OfflineDownloadsScreen(),
-        '/speaking': (_) => const SpeakingPracticeScreen(),
+        '/speaking': (c) {
+          final lessonId = ModalRoute.of(c)?.settings.arguments as String?;
+          return SpeakingPracticeScreen(lessonId: lessonId);
+        },
       },
     );
   }
@@ -163,10 +166,18 @@ class _MainShellState extends State<MainShell> {
   Widget build(BuildContext context) {
     final pages = [
       HomeScreen(
-        onStartLesson: () => Navigator.pushNamed(context, '/flashcard'),
+        onStartLesson: (lessonId) => Navigator.pushNamed(
+          context,
+          '/flashcard',
+          arguments: lessonId,
+        ),
         onSeeAllPractice: () => setState(() => _index = 1),
         onStartQuiz: () => Navigator.pushNamed(context, '/quiz'),
-        onStartSpeaking: () => Navigator.pushNamed(context, '/speaking'),
+        onStartSpeaking: (lessonId) => Navigator.pushNamed(
+          context,
+          '/speaking',
+          arguments: lessonId,
+        ),
         onOpenSaved: () => setState(() => _index = 2),
       ),
       CategoriesScreen(
