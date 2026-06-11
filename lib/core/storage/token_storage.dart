@@ -23,6 +23,10 @@ class TokenStorage {
 
   Future<String?> readRefreshToken() => _read(refreshTokenKey);
 
+  Future<String?> getAccessToken() => readAccessToken();
+
+  Future<String?> getRefreshToken() => readRefreshToken();
+
   Future<bool> hasSession() async {
     final accessToken = await readAccessToken();
     final refreshToken = await readRefreshToken();
@@ -48,6 +52,8 @@ class TokenStorage {
     await _delete(refreshTokenKey);
     await _delete(legacyTokenKey);
   }
+
+  Future<void> clearTokens() => clear();
 
   Future<String?> _read(String key) async {
     if (_useSharedPreferences) {

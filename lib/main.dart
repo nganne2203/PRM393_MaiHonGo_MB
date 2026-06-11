@@ -71,6 +71,7 @@ class SakuraApp extends ConsumerWidget {
         '/forgot-password': (c) => ForgotPasswordScreen(
               onBack: () => Navigator.pop(c),
             ),
+        '/change-password': (_) => const ChangePasswordScreen(),
         '/main': (_) => const MainShell(),
         '/flashcard': (_) => const FlashcardScreen(),
         '/quiz': (c) => QuizScreen(
