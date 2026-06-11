@@ -71,6 +71,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               AppColors.primarySoft,
               'Offline Downloads',
               'Manage downloaded lessons',
+              onTap: () => Navigator.pushNamed(context, '/offline-downloads'),
             ),
             const SizedBox(height: 16),
             _section('ACCOUNT'),
