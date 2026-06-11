@@ -47,89 +47,93 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
     final hasError = state.status == ContentStatus.error;
     if (_i >= cards.length && cards.isNotEmpty) _i = 0;
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(children: [
-          Row(children: [
-            const BackButton(),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      value: cards.isEmpty ? 0 : (_i + 1) / cards.length,
-                      minHeight: 8,
-                      backgroundColor: AppColors.line,
-                      valueColor:
-                          const AlwaysStoppedAnimation(AppColors.primary),
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(children: [
+            Row(children: [
+              const BackButton(),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: cards.isEmpty ? 0 : (_i + 1) / cards.length,
+                        minHeight: 8,
+                        backgroundColor: AppColors.line,
+                        valueColor:
+                            const AlwaysStoppedAnimation(AppColors.primary),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(cards.isEmpty ? '0 / 0' : '${_i + 1} / ${cards.length}',
-                      style: const TextStyle(
-                          color: AppColors.mute,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600)),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                        cards.isEmpty ? '0 / 0' : '${_i + 1} / ${cards.length}',
+                        style: const TextStyle(
+                            color: AppColors.mute,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => setState(() => _saved = !_saved),
+                icon: Icon(
+                    _saved
+                        ? Icons.bookmark_rounded
+                        : Icons.bookmark_border_rounded,
+                    color: _saved ? AppColors.sakura : AppColors.mute),
+              ),
+            ]),
+            const SizedBox(height: 16),
+            Expanded(
+              child: Center(
+                child: isLoading && cards.isEmpty
+                    ? const CircularProgressIndicator()
+                    : cards.isEmpty
+                        ? _EmptyFlashcards(
+                            isOffline: isOffline || hasError,
+                            message: state.message,
+                            onRetry: () =>
+                                ref.read(vocabularyProvider.notifier).retry(),
+                          )
+                        : GestureDetector(
+                            onHorizontalDragEnd: (d) {
+                              if (d.primaryVelocity == null) return;
+                              _next(cards);
+                            },
+                            child: FlipFlashcard(
+                              key: ValueKey(cards[_i].id),
+                              kanji: cards[_i].word,
+                              kana: cards[_i].hiragana,
+                              romaji: cards[_i].romaji,
+                              meaning: cards[_i].meaningVi,
+                              example: _example(cards[_i]).$1,
+                              exampleTr: _example(cards[_i]).$2,
+                            ),
+                          ),
               ),
             ),
-            IconButton(
-              onPressed: () => setState(() => _saved = !_saved),
-              icon: Icon(
-                  _saved
-                      ? Icons.bookmark_rounded
-                      : Icons.bookmark_border_rounded,
-                  color: _saved ? AppColors.sakura : AppColors.mute),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _ctrlBtn(Icons.close_rounded, AppColors.sakura,
+                    AppColors.sakuraSoft, () => _next(cards)),
+                const SizedBox(width: 16),
+                _ctrlBtn(Icons.refresh_rounded, AppColors.primary,
+                    AppColors.primarySoft, () {}),
+                const SizedBox(width: 16),
+                _ctrlBtn(Icons.check_rounded, Colors.white, AppColors.matcha,
+                    () => _next(cards),
+                    filled: true),
+              ],
             ),
           ]),
-          const SizedBox(height: 16),
-          Expanded(
-            child: Center(
-              child: isLoading && cards.isEmpty
-                  ? const CircularProgressIndicator()
-                  : cards.isEmpty
-                      ? _EmptyFlashcards(
-                          isOffline: isOffline || hasError,
-                          message: state.message,
-                          onRetry: () =>
-                              ref.read(vocabularyProvider.notifier).retry(),
-                        )
-                      : GestureDetector(
-                          onHorizontalDragEnd: (d) {
-                            if (d.primaryVelocity == null) return;
-                            _next(cards);
-                          },
-                          child: FlipFlashcard(
-                            key: ValueKey(cards[_i].id),
-                            kanji: cards[_i].word,
-                            kana: cards[_i].hiragana,
-                            romaji: cards[_i].romaji,
-                            meaning: cards[_i].meaningVi,
-                            example: _example(cards[_i]).$1,
-                            exampleTr: _example(cards[_i]).$2,
-                          ),
-                        ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _ctrlBtn(Icons.close_rounded, AppColors.sakura,
-                  AppColors.sakuraSoft, () => _next(cards)),
-              const SizedBox(width: 16),
-              _ctrlBtn(Icons.refresh_rounded, AppColors.primary,
-                  AppColors.primarySoft, () {}),
-              const SizedBox(width: 16),
-              _ctrlBtn(Icons.check_rounded, Colors.white, AppColors.matcha,
-                  () => _next(cards),
-                  filled: true),
-            ],
-          ),
-        ]),
+        ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/services.dart';
 
 import 'features/auth/state/auth_state.dart';
 import 'theme/app_theme.dart';
@@ -23,6 +24,14 @@ import 'features/offline/screens/offline_downloads_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
+  );
   debugPrint('[STARTUP] Step 1: Flutter binding initialized');
 
   FlutterError.onError = (details) {
@@ -53,6 +62,8 @@ class SakuraApp extends ConsumerWidget {
       title: 'Sakura',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
+      darkTheme: AppTheme.light(),
+      themeMode: ThemeMode.light,
       home: SplashScreen(
         onDone: () => _openInitialRoute(ref),
       ),
