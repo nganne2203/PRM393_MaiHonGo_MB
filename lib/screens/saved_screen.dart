@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
-import '../data/vocab_data.dart';
 
 class SavedScreen extends StatelessWidget {
   final VoidCallback onReview;
@@ -9,15 +8,13 @@ class SavedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final saved = kVocab.take(5).toList();
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 96),
         children: [
           Text('Saved Words', style: AppTextStyles.h1),
           const SizedBox(height: 4),
-          Text('${saved.length} bookmarked vocabulary',
-              style: AppTextStyles.caption),
+          Text('0 bookmarked vocabulary', style: AppTextStyles.caption),
           const SizedBox(height: 16),
           TextField(
             decoration: InputDecoration(
@@ -72,42 +69,22 @@ class SavedScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          ...saved.map((v) => Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  boxShadow: AppShadows.card,
-                ),
-                child: Row(children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                        color: AppColors.sakuraSoft,
-                        borderRadius: BorderRadius.circular(AppRadius.md)),
-                    alignment: Alignment.center,
-                    child: Text(v.kanji,
-                        style: AppTextStyles.jp(22, color: AppColors.sakura)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(v.kana,
-                            style: AppTextStyles.body
-                                .copyWith(fontWeight: FontWeight.w700)),
-                        Text('${v.romaji} · ${v.meaning}',
-                            style: AppTextStyles.caption),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.bookmark_rounded,
-                      color: AppColors.sakura, size: 18),
-                ]),
-              )),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.bookmark_border_rounded,
+                    color: AppColors.mute, size: 24),
+                const SizedBox(height: 8),
+                Text('Saved words will appear here.',
+                    style: AppTextStyles.caption),
+              ],
+            ),
+          ),
         ],
       ),
     );
