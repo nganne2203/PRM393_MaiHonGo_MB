@@ -5134,3 +5134,1772 @@ extension LocalContentPackageQueryProperty
     });
   }
 }
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+extension GetLocalFlashcardSessionResultCollection on Isar {
+  IsarCollection<LocalFlashcardSessionResult>
+      get localFlashcardSessionResults => this.collection();
+}
+
+const LocalFlashcardSessionResultSchema = CollectionSchema(
+  name: r'LocalFlashcardSessionResult',
+  id: -6824640331783816856,
+  properties: {
+    r'accuracy': PropertySchema(
+      id: 0,
+      name: r'accuracy',
+      type: IsarType.long,
+    ),
+    r'completedAt': PropertySchema(
+      id: 1,
+      name: r'completedAt',
+      type: IsarType.dateTime,
+    ),
+    r'learnedCount': PropertySchema(
+      id: 2,
+      name: r'learnedCount',
+      type: IsarType.long,
+    ),
+    r'learnedVocabularyIds': PropertySchema(
+      id: 3,
+      name: r'learnedVocabularyIds',
+      type: IsarType.stringList,
+    ),
+    r'lessonId': PropertySchema(
+      id: 4,
+      name: r'lessonId',
+      type: IsarType.string,
+    ),
+    r'notLearnedCount': PropertySchema(
+      id: 5,
+      name: r'notLearnedCount',
+      type: IsarType.long,
+    ),
+    r'notLearnedVocabularyIds': PropertySchema(
+      id: 6,
+      name: r'notLearnedVocabularyIds',
+      type: IsarType.stringList,
+    ),
+    r'synced': PropertySchema(
+      id: 7,
+      name: r'synced',
+      type: IsarType.bool,
+    ),
+    r'totalCards': PropertySchema(
+      id: 8,
+      name: r'totalCards',
+      type: IsarType.long,
+    )
+  },
+  estimateSize: _localFlashcardSessionResultEstimateSize,
+  serialize: _localFlashcardSessionResultSerialize,
+  deserialize: _localFlashcardSessionResultDeserialize,
+  deserializeProp: _localFlashcardSessionResultDeserializeProp,
+  idName: r'id',
+  indexes: {
+    r'completedAt': IndexSchema(
+      id: -3156591011457686752,
+      name: r'completedAt',
+      unique: true,
+      replace: true,
+      properties: [
+        IndexPropertySchema(
+          name: r'completedAt',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    )
+  },
+  links: {},
+  embeddedSchemas: {},
+  getId: _localFlashcardSessionResultGetId,
+  getLinks: _localFlashcardSessionResultGetLinks,
+  attach: _localFlashcardSessionResultAttach,
+  version: '3.1.0+1',
+);
+
+int _localFlashcardSessionResultEstimateSize(
+  LocalFlashcardSessionResult object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  bytesCount += 3 + object.learnedVocabularyIds.length * 3;
+  {
+    for (var i = 0; i < object.learnedVocabularyIds.length; i++) {
+      final value = object.learnedVocabularyIds[i];
+      bytesCount += value.length * 3;
+    }
+  }
+  {
+    final value = object.lessonId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.notLearnedVocabularyIds.length * 3;
+  {
+    for (var i = 0; i < object.notLearnedVocabularyIds.length; i++) {
+      final value = object.notLearnedVocabularyIds[i];
+      bytesCount += value.length * 3;
+    }
+  }
+  return bytesCount;
+}
+
+void _localFlashcardSessionResultSerialize(
+  LocalFlashcardSessionResult object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeLong(offsets[0], object.accuracy);
+  writer.writeDateTime(offsets[1], object.completedAt);
+  writer.writeLong(offsets[2], object.learnedCount);
+  writer.writeStringList(offsets[3], object.learnedVocabularyIds);
+  writer.writeString(offsets[4], object.lessonId);
+  writer.writeLong(offsets[5], object.notLearnedCount);
+  writer.writeStringList(offsets[6], object.notLearnedVocabularyIds);
+  writer.writeBool(offsets[7], object.synced);
+  writer.writeLong(offsets[8], object.totalCards);
+}
+
+LocalFlashcardSessionResult _localFlashcardSessionResultDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = LocalFlashcardSessionResult();
+  object.accuracy = reader.readLong(offsets[0]);
+  object.completedAt = reader.readDateTime(offsets[1]);
+  object.id = id;
+  object.learnedCount = reader.readLong(offsets[2]);
+  object.learnedVocabularyIds = reader.readStringList(offsets[3]) ?? [];
+  object.lessonId = reader.readStringOrNull(offsets[4]);
+  object.notLearnedCount = reader.readLong(offsets[5]);
+  object.notLearnedVocabularyIds = reader.readStringList(offsets[6]) ?? [];
+  object.synced = reader.readBool(offsets[7]);
+  object.totalCards = reader.readLong(offsets[8]);
+  return object;
+}
+
+P _localFlashcardSessionResultDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readLong(offset)) as P;
+    case 1:
+      return (reader.readDateTime(offset)) as P;
+    case 2:
+      return (reader.readLong(offset)) as P;
+    case 3:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 4:
+      return (reader.readStringOrNull(offset)) as P;
+    case 5:
+      return (reader.readLong(offset)) as P;
+    case 6:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 7:
+      return (reader.readBool(offset)) as P;
+    case 8:
+      return (reader.readLong(offset)) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+Id _localFlashcardSessionResultGetId(LocalFlashcardSessionResult object) {
+  return object.id;
+}
+
+List<IsarLinkBase<dynamic>> _localFlashcardSessionResultGetLinks(
+    LocalFlashcardSessionResult object) {
+  return [];
+}
+
+void _localFlashcardSessionResultAttach(
+    IsarCollection<dynamic> col, Id id, LocalFlashcardSessionResult object) {
+  object.id = id;
+}
+
+extension LocalFlashcardSessionResultByIndex
+    on IsarCollection<LocalFlashcardSessionResult> {
+  Future<LocalFlashcardSessionResult?> getByCompletedAt(DateTime completedAt) {
+    return getByIndex(r'completedAt', [completedAt]);
+  }
+
+  LocalFlashcardSessionResult? getByCompletedAtSync(DateTime completedAt) {
+    return getByIndexSync(r'completedAt', [completedAt]);
+  }
+
+  Future<bool> deleteByCompletedAt(DateTime completedAt) {
+    return deleteByIndex(r'completedAt', [completedAt]);
+  }
+
+  bool deleteByCompletedAtSync(DateTime completedAt) {
+    return deleteByIndexSync(r'completedAt', [completedAt]);
+  }
+
+  Future<List<LocalFlashcardSessionResult?>> getAllByCompletedAt(
+      List<DateTime> completedAtValues) {
+    final values = completedAtValues.map((e) => [e]).toList();
+    return getAllByIndex(r'completedAt', values);
+  }
+
+  List<LocalFlashcardSessionResult?> getAllByCompletedAtSync(
+      List<DateTime> completedAtValues) {
+    final values = completedAtValues.map((e) => [e]).toList();
+    return getAllByIndexSync(r'completedAt', values);
+  }
+
+  Future<int> deleteAllByCompletedAt(List<DateTime> completedAtValues) {
+    final values = completedAtValues.map((e) => [e]).toList();
+    return deleteAllByIndex(r'completedAt', values);
+  }
+
+  int deleteAllByCompletedAtSync(List<DateTime> completedAtValues) {
+    final values = completedAtValues.map((e) => [e]).toList();
+    return deleteAllByIndexSync(r'completedAt', values);
+  }
+
+  Future<Id> putByCompletedAt(LocalFlashcardSessionResult object) {
+    return putByIndex(r'completedAt', object);
+  }
+
+  Id putByCompletedAtSync(LocalFlashcardSessionResult object,
+      {bool saveLinks = true}) {
+    return putByIndexSync(r'completedAt', object, saveLinks: saveLinks);
+  }
+
+  Future<List<Id>> putAllByCompletedAt(
+      List<LocalFlashcardSessionResult> objects) {
+    return putAllByIndex(r'completedAt', objects);
+  }
+
+  List<Id> putAllByCompletedAtSync(List<LocalFlashcardSessionResult> objects,
+      {bool saveLinks = true}) {
+    return putAllByIndexSync(r'completedAt', objects, saveLinks: saveLinks);
+  }
+}
+
+extension LocalFlashcardSessionResultQueryWhereSort on QueryBuilder<
+    LocalFlashcardSessionResult, LocalFlashcardSessionResult, QWhere> {
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterWhere> anyId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(const IdWhereClause.any());
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterWhere> anyCompletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'completedAt'),
+      );
+    });
+  }
+}
+
+extension LocalFlashcardSessionResultQueryWhere on QueryBuilder<
+    LocalFlashcardSessionResult, LocalFlashcardSessionResult, QWhereClause> {
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterWhereClause> idEqualTo(Id id) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IdWhereClause.between(
+        lower: id,
+        upper: id,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterWhereClause> idNotEqualTo(Id id) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(
+              IdWhereClause.lessThan(upper: id, includeUpper: false),
+            )
+            .addWhereClause(
+              IdWhereClause.greaterThan(lower: id, includeLower: false),
+            );
+      } else {
+        return query
+            .addWhereClause(
+              IdWhereClause.greaterThan(lower: id, includeLower: false),
+            )
+            .addWhereClause(
+              IdWhereClause.lessThan(upper: id, includeUpper: false),
+            );
+      }
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterWhereClause> idGreaterThan(Id id, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IdWhereClause.greaterThan(lower: id, includeLower: include),
+      );
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterWhereClause> idLessThan(Id id, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IdWhereClause.lessThan(upper: id, includeUpper: include),
+      );
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterWhereClause> idBetween(
+    Id lowerId,
+    Id upperId, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IdWhereClause.between(
+        lower: lowerId,
+        includeLower: includeLower,
+        upper: upperId,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterWhereClause> completedAtEqualTo(DateTime completedAt) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'completedAt',
+        value: [completedAt],
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterWhereClause> completedAtNotEqualTo(DateTime completedAt) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'completedAt',
+              lower: [],
+              upper: [completedAt],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'completedAt',
+              lower: [completedAt],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'completedAt',
+              lower: [completedAt],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'completedAt',
+              lower: [],
+              upper: [completedAt],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterWhereClause> completedAtGreaterThan(
+    DateTime completedAt, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'completedAt',
+        lower: [completedAt],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterWhereClause> completedAtLessThan(
+    DateTime completedAt, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'completedAt',
+        lower: [],
+        upper: [completedAt],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterWhereClause> completedAtBetween(
+    DateTime lowerCompletedAt,
+    DateTime upperCompletedAt, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'completedAt',
+        lower: [lowerCompletedAt],
+        includeLower: includeLower,
+        upper: [upperCompletedAt],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+}
+
+extension LocalFlashcardSessionResultQueryFilter on QueryBuilder<
+    LocalFlashcardSessionResult,
+    LocalFlashcardSessionResult,
+    QFilterCondition> {
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> accuracyEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'accuracy',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> accuracyGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'accuracy',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> accuracyLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'accuracy',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> accuracyBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'accuracy',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> completedAtEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'completedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> completedAtGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'completedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> completedAtLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'completedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> completedAtBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'completedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> idEqualTo(Id value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> idGreaterThan(
+    Id value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> idLessThan(
+    Id value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> idBetween(
+    Id lower,
+    Id upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'id',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedCountEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'learnedCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedCountGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'learnedCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedCountLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'learnedCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedCountBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'learnedCount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedVocabularyIdsElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'learnedVocabularyIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedVocabularyIdsElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'learnedVocabularyIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedVocabularyIdsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'learnedVocabularyIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedVocabularyIdsElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'learnedVocabularyIds',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedVocabularyIdsElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'learnedVocabularyIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedVocabularyIdsElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'learnedVocabularyIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+          QAfterFilterCondition>
+      learnedVocabularyIdsElementContains(String value,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'learnedVocabularyIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+          QAfterFilterCondition>
+      learnedVocabularyIdsElementMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'learnedVocabularyIds',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedVocabularyIdsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'learnedVocabularyIds',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedVocabularyIdsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'learnedVocabularyIds',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedVocabularyIdsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'learnedVocabularyIds',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedVocabularyIdsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'learnedVocabularyIds',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedVocabularyIdsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'learnedVocabularyIds',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedVocabularyIdsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'learnedVocabularyIds',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedVocabularyIdsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'learnedVocabularyIds',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> learnedVocabularyIdsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'learnedVocabularyIds',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> lessonIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lessonId',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> lessonIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lessonId',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> lessonIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lessonId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> lessonIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lessonId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> lessonIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lessonId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> lessonIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lessonId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> lessonIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'lessonId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> lessonIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'lessonId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+          QAfterFilterCondition>
+      lessonIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'lessonId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+          QAfterFilterCondition>
+      lessonIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'lessonId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> lessonIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lessonId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> lessonIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'lessonId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedCountEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notLearnedCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedCountGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'notLearnedCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedCountLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'notLearnedCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedCountBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'notLearnedCount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedVocabularyIdsElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notLearnedVocabularyIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedVocabularyIdsElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'notLearnedVocabularyIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedVocabularyIdsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'notLearnedVocabularyIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedVocabularyIdsElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'notLearnedVocabularyIds',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedVocabularyIdsElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'notLearnedVocabularyIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedVocabularyIdsElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'notLearnedVocabularyIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+          QAfterFilterCondition>
+      notLearnedVocabularyIdsElementContains(String value,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'notLearnedVocabularyIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+          QAfterFilterCondition>
+      notLearnedVocabularyIdsElementMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'notLearnedVocabularyIds',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedVocabularyIdsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notLearnedVocabularyIds',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedVocabularyIdsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'notLearnedVocabularyIds',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedVocabularyIdsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'notLearnedVocabularyIds',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedVocabularyIdsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'notLearnedVocabularyIds',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedVocabularyIdsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'notLearnedVocabularyIds',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedVocabularyIdsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'notLearnedVocabularyIds',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedVocabularyIdsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'notLearnedVocabularyIds',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> notLearnedVocabularyIdsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'notLearnedVocabularyIds',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> syncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'synced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> totalCardsEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'totalCards',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> totalCardsGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'totalCards',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> totalCardsLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'totalCards',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterFilterCondition> totalCardsBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'totalCards',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+}
+
+extension LocalFlashcardSessionResultQueryObject on QueryBuilder<
+    LocalFlashcardSessionResult,
+    LocalFlashcardSessionResult,
+    QFilterCondition> {}
+
+extension LocalFlashcardSessionResultQueryLinks on QueryBuilder<
+    LocalFlashcardSessionResult,
+    LocalFlashcardSessionResult,
+    QFilterCondition> {}
+
+extension LocalFlashcardSessionResultQuerySortBy on QueryBuilder<
+    LocalFlashcardSessionResult, LocalFlashcardSessionResult, QSortBy> {
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> sortByAccuracy() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accuracy', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> sortByAccuracyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accuracy', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> sortByCompletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'completedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> sortByCompletedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'completedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> sortByLearnedCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'learnedCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> sortByLearnedCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'learnedCount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> sortByLessonId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lessonId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> sortByLessonIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lessonId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> sortByNotLearnedCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'notLearnedCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> sortByNotLearnedCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'notLearnedCount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> sortBySynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> sortBySyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> sortByTotalCards() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalCards', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> sortByTotalCardsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalCards', Sort.desc);
+    });
+  }
+}
+
+extension LocalFlashcardSessionResultQuerySortThenBy on QueryBuilder<
+    LocalFlashcardSessionResult, LocalFlashcardSessionResult, QSortThenBy> {
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> thenByAccuracy() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accuracy', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> thenByAccuracyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accuracy', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> thenByCompletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'completedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> thenByCompletedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'completedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> thenById() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'id', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> thenByIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'id', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> thenByLearnedCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'learnedCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> thenByLearnedCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'learnedCount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> thenByLessonId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lessonId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> thenByLessonIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lessonId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> thenByNotLearnedCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'notLearnedCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> thenByNotLearnedCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'notLearnedCount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> thenBySynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> thenBySyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> thenByTotalCards() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalCards', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QAfterSortBy> thenByTotalCardsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalCards', Sort.desc);
+    });
+  }
+}
+
+extension LocalFlashcardSessionResultQueryWhereDistinct on QueryBuilder<
+    LocalFlashcardSessionResult, LocalFlashcardSessionResult, QDistinct> {
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QDistinct> distinctByAccuracy() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'accuracy');
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QDistinct> distinctByCompletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'completedAt');
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QDistinct> distinctByLearnedCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'learnedCount');
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QDistinct> distinctByLearnedVocabularyIds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'learnedVocabularyIds');
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QDistinct> distinctByLessonId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lessonId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QDistinct> distinctByNotLearnedCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'notLearnedCount');
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QDistinct> distinctByNotLearnedVocabularyIds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'notLearnedVocabularyIds');
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QDistinct> distinctBySynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'synced');
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, LocalFlashcardSessionResult,
+      QDistinct> distinctByTotalCards() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'totalCards');
+    });
+  }
+}
+
+extension LocalFlashcardSessionResultQueryProperty on QueryBuilder<
+    LocalFlashcardSessionResult, LocalFlashcardSessionResult, QQueryProperty> {
+  QueryBuilder<LocalFlashcardSessionResult, int, QQueryOperations>
+      idProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, int, QQueryOperations>
+      accuracyProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'accuracy');
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, DateTime, QQueryOperations>
+      completedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'completedAt');
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, int, QQueryOperations>
+      learnedCountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'learnedCount');
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, List<String>, QQueryOperations>
+      learnedVocabularyIdsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'learnedVocabularyIds');
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, String?, QQueryOperations>
+      lessonIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lessonId');
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, int, QQueryOperations>
+      notLearnedCountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'notLearnedCount');
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, List<String>, QQueryOperations>
+      notLearnedVocabularyIdsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'notLearnedVocabularyIds');
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, bool, QQueryOperations>
+      syncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'synced');
+    });
+  }
+
+  QueryBuilder<LocalFlashcardSessionResult, int, QQueryOperations>
+      totalCardsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'totalCards');
+    });
+  }
+}

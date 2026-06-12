@@ -49,3 +49,21 @@ class LocalContentPackage {
   late DateTime downloadedAt;
   String? status;
 }
+
+@collection
+class LocalFlashcardSessionResult {
+  Id id = Isar.autoIncrement;
+
+  String? lessonId;
+  late int totalCards;
+  late int learnedCount;
+  late int notLearnedCount;
+  late int accuracy;
+  late List<String> learnedVocabularyIds;
+  late List<String> notLearnedVocabularyIds;
+
+  @Index(unique: true, replace: true)
+  late DateTime completedAt;
+
+  late bool synced;
+}

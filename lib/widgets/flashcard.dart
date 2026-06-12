@@ -41,6 +41,7 @@ class FlipFlashcard extends StatefulWidget {
   final String example;
   final String exampleTr;
   final String audioUrl;
+  final int resetToken;
   const FlipFlashcard({
     super.key,
     required this.kanji,
@@ -50,6 +51,7 @@ class FlipFlashcard extends StatefulWidget {
     required this.example,
     required this.exampleTr,
     this.audioUrl = '',
+    this.resetToken = 0,
   });
 
   @override
@@ -62,6 +64,14 @@ class _FlipFlashcardState extends State<FlipFlashcard>
       vsync: this, duration: const Duration(milliseconds: 500));
   late final AudioPlayerService _audioPlayerService = AudioPlayerService();
   late final AudioCacheService _audioCacheService = AudioCacheService();
+
+  @override
+  void didUpdateWidget(covariant FlipFlashcard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.resetToken != widget.resetToken) {
+      _c.reverse();
+    }
+  }
 
   @override
   void dispose() {

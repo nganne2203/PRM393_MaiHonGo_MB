@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/network/api_client.dart';
 import '../core/state/content_state.dart';
 import '../features/bookmarks/repositories/bookmark_repository.dart';
+import '../features/flashcards/models/flashcard_session.dart';
+import '../features/flashcards/repositories/flashcard_session_repository.dart';
+import '../features/flashcards/screens/flashcard_summary_screen.dart';
 import '../features/vocabulary/models/vocabulary.dart';
 import '../features/vocabulary/state/vocabulary_controller.dart';
 import '../theme/app_theme.dart';
@@ -11,9 +14,11 @@ import '../widgets/flashcard.dart';
 
 class FlashcardScreen extends ConsumerStatefulWidget {
   final String? lessonId;
+  final List<Vocabulary>? initialCards;
   const FlashcardScreen({
     super.key,
     this.lessonId,
+    this.initialCards,
   });
 
   @override
@@ -21,39 +26,41 @@ class FlashcardScreen extends ConsumerStatefulWidget {
 }
 
 class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
-  int _i = 0;
   final Set<String> _savedIds = {};
   final _bookmarkRepository = BookmarkRepository();
+  FlashcardSessionState? _session;
+  int _resetToken = 0;
+  bool _finishing = false;
 
   @override
   void initState() {
     super.initState();
     Future.microtask(
       () async {
-        await ref
-            .read(vocabularyProvider.notifier)
-            .loadVocabulary(lessonId: widget.lessonId);
+        if (widget.initialCards == null) {
+          await ref
+              .read(vocabularyProvider.notifier)
+              .loadVocabulary(lessonId: widget.lessonId);
+        }
         await _loadBookmarks();
       },
     );
   }
 
-  void _next(List<Vocabulary> cards) => setState(() {
-        if (cards.isEmpty) return;
-        _i = (_i + 1) % cards.length;
-      });
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(vocabularyProvider);
-    final cards = state.vocabulary;
+    final cards = widget.initialCards ?? state.vocabulary;
+    _syncSession(cards);
+    final session = _session;
     final isLoading = state.status == ContentStatus.loading;
     final isOffline = state.status == ContentStatus.offline;
     final hasError = state.status == ContentStatus.error;
-    if (_i >= cards.length && cards.isNotEmpty) _i = 0;
-    final currentCard = cards.isEmpty ? null : cards[_i];
+    final currentCard = session?.currentCard;
     final isSaved =
         currentCard == null ? false : _savedIds.contains(currentCard.id);
+    final answeredCards = session?.answeredCards ?? 0;
+    final totalCards = session?.totalCards ?? cards.length;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -70,7 +77,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(999),
                       child: LinearProgressIndicator(
-                        value: cards.isEmpty ? 0 : (_i + 1) / cards.length,
+                        value: totalCards == 0 ? 0 : answeredCards / totalCards,
                         minHeight: 8,
                         backgroundColor: AppColors.line,
                         valueColor:
@@ -79,7 +86,9 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                        cards.isEmpty ? '0 / 0' : '${_i + 1} / ${cards.length}',
+                        totalCards == 0
+                            ? '0 / 0'
+                            : '$answeredCards / $totalCards',
                         style: const TextStyle(
                             color: AppColors.mute,
                             fontSize: 11,
@@ -101,7 +110,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
             const SizedBox(height: 16),
             Expanded(
               child: Center(
-                child: isLoading && cards.isEmpty
+                child: isLoading && cards.isEmpty && widget.initialCards == null
                     ? const CircularProgressIndicator()
                     : cards.isEmpty
                         ? _EmptyFlashcards(
@@ -110,21 +119,20 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                             onRetry: () =>
                                 ref.read(vocabularyProvider.notifier).retry(),
                           )
-                        : GestureDetector(
-                            onHorizontalDragEnd: (d) {
-                              if (d.primaryVelocity == null) return;
-                              _next(cards);
-                            },
-                            child: FlipFlashcard(
-                              key: ValueKey(cards[_i].id),
-                              kanji: cards[_i].word,
-                              kana: cards[_i].hiragana,
-                              romaji: cards[_i].romaji,
-                              meaning: cards[_i].meaningVi,
-                              example: _example(cards[_i]).$1,
-                              exampleTr: _example(cards[_i]).$2,
-                              audioUrl: cards[_i].audioUrl,
-                            ),
+                        : FlipFlashcard(
+                            key: ValueKey(currentCard?.id),
+                            kanji: currentCard?.word ?? '',
+                            kana: currentCard?.hiragana ?? '',
+                            romaji: currentCard?.romaji ?? '',
+                            meaning: currentCard?.meaningVi ?? '',
+                            example: currentCard == null
+                                ? ''
+                                : _example(currentCard).$1,
+                            exampleTr: currentCard == null
+                                ? ''
+                                : _example(currentCard).$2,
+                            audioUrl: currentCard?.audioUrl ?? '',
+                            resetToken: _resetToken,
                           ),
               ),
             ),
@@ -132,14 +140,17 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _ctrlBtn(Icons.close_rounded, AppColors.sakura,
-                    AppColors.sakuraSoft, () => _next(cards)),
+                _ctrlBtn(
+                    Icons.close_rounded,
+                    AppColors.sakura,
+                    AppColors.sakuraSoft,
+                    () => _answerCurrent(FlashcardAnswerStatus.notLearned)),
                 const SizedBox(width: 16),
                 _ctrlBtn(Icons.refresh_rounded, AppColors.primary,
-                    AppColors.primarySoft, () {}),
+                    AppColors.primarySoft, _retryCurrent),
                 const SizedBox(width: 16),
                 _ctrlBtn(Icons.check_rounded, Colors.white, AppColors.matcha,
-                    () => _next(cards),
+                    () => _answerCurrent(FlashcardAnswerStatus.learned),
                     filled: true),
               ],
             ),
@@ -147,6 +158,20 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
         ),
       ),
     );
+  }
+
+  void _syncSession(List<Vocabulary> cards) {
+    final session = _session;
+    if (session != null && _sameCards(session.cards, cards)) return;
+    _session = FlashcardSessionState.start(cards);
+  }
+
+  bool _sameCards(List<Vocabulary> a, List<Vocabulary> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i += 1) {
+      if (a[i].id != b[i].id) return false;
+    }
+    return true;
   }
 
   Widget _ctrlBtn(IconData icon, Color color, Color bg, VoidCallback onTap,
@@ -170,6 +195,54 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
     if (vocabulary.examples.isEmpty) return ('', '');
     final example = vocabulary.examples.first;
     return (example.jp, example.vi);
+  }
+
+  Future<void> _answerCurrent(FlashcardAnswerStatus status) async {
+    final session = _session;
+    if (session == null || session.isEmpty || _finishing) return;
+
+    final answered = session.answerCurrent(status);
+    setState(() => _session = answered);
+
+    if (answered.isLastCard) {
+      await _finishSession(answered);
+      return;
+    }
+
+    setState(() {
+      _session = answered.moveNext();
+      _resetToken += 1;
+    });
+  }
+
+  void _retryCurrent() {
+    if (_session?.isEmpty ?? true) return;
+    setState(() => _resetToken += 1);
+  }
+
+  Future<void> _finishSession(FlashcardSessionState session) async {
+    setState(() => _finishing = true);
+    final result = session.result(lessonId: widget.lessonId);
+
+    try {
+      final repository =
+          await ref.read(flashcardSessionRepositoryProvider.future);
+      await repository.saveResult(result);
+    } catch (error) {
+      _showMessage(ApiClient.describeError(error));
+    }
+
+    if (!mounted) return;
+    setState(() => _finishing = false);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FlashcardSummaryScreen(
+          result: result,
+          originalCards: session.originalCards,
+        ),
+      ),
+    );
   }
 
   Future<void> _loadBookmarks() async {
