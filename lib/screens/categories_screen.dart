@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/state/content_state.dart';
 import '../features/lessons/models/lesson.dart';
 import '../features/lessons/state/lesson_controller.dart';
+import '../shared/widgets/app_state_widgets.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 
@@ -29,23 +30,20 @@ class CategoriesScreen extends ConsumerWidget {
                 style: AppTextStyles.caption),
             const SizedBox(height: 20),
             if (isOffline)
-              _StatusBanner(
-                icon: Icons.cloud_off_rounded,
-                text: 'Showing cached lessons',
-                color: AppColors.gold,
-              ),
+              AppStatusBanner.offline(message: 'Showing cached lessons'),
             if (hasError && state.message != null)
-              _StatusBanner(
-                icon: Icons.error_outline_rounded,
-                text: state.message!,
-                color: AppColors.sakura,
+              AppStatusBanner.error(
+                message: state.message!,
                 onRetry: () => ref.read(lessonProvider.notifier).loadLessons(),
               ),
             Expanded(
               child: isLoading && state.lessons.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const AppLoadingState(message: 'Loading lessons...')
                   : state.lessons.isEmpty
-                      ? const _EmptyLessons()
+                      ? AppStatePlaceholder.empty(
+                          icon: Icons.menu_book_outlined,
+                          title: 'No lessons available yet.',
+                        )
                       : RefreshIndicator(
                           onRefresh: () =>
                               ref.read(lessonProvider.notifier).loadLessons(),
@@ -195,51 +193,3 @@ const _palettes = [
   _CardPalette([Color(0xFFFFD2A1), Color(0xFFFFA871)], Icons.work_rounded),
   _CardPalette([Color(0xFFB6DDF9), Color(0xFF7CC4F5)], Icons.translate_rounded),
 ];
-
-class _StatusBanner extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Color color;
-  final VoidCallback? onRetry;
-
-  const _StatusBanner({
-    required this.icon,
-    required this.text,
-    required this.color,
-    this.onRetry,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      child: Row(children: [
-        Icon(icon, color: color, size: 18),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(text,
-              style: TextStyle(
-                  color: color, fontSize: 12, fontWeight: FontWeight.w700)),
-        ),
-        if (onRetry != null)
-          TextButton(onPressed: onRetry, child: const Text('Retry')),
-      ]),
-    );
-  }
-}
-
-class _EmptyLessons extends StatelessWidget {
-  const _EmptyLessons();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text('No lessons available yet.', style: AppTextStyles.caption),
-    );
-  }
-}

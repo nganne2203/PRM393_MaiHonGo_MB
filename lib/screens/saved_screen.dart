@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/network/api_client.dart';
 import '../features/bookmarks/models/bookmark.dart';
 import '../features/bookmarks/repositories/bookmark_repository.dart';
+import '../shared/widgets/app_state_widgets.dart';
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 
@@ -116,14 +117,23 @@ class _SavedScreenState extends State<SavedScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            if (_message != null) _messageCard(),
+            if (_message != null)
+              AppStatusBanner.error(
+                message: _message!,
+                onRetry: _loadBookmarks,
+              ),
             if (_loading)
               const Padding(
                 padding: EdgeInsets.only(top: 32),
-                child: Center(child: CircularProgressIndicator()),
+                child: AppLoadingState(message: 'Loading saved words...'),
               )
             else if (visible.isEmpty)
-              _emptyCard()
+              AppStatePlaceholder.empty(
+                icon: Icons.bookmark_border_rounded,
+                title: query.isEmpty
+                    ? 'Saved words will appear here.'
+                    : 'No saved words match your search.',
+              )
             else
               for (final bookmark in visible) ...[
                 _bookmarkTile(bookmark),
@@ -192,38 +202,6 @@ class _SavedScreenState extends State<SavedScreen> {
       ),
     );
   }
-
-  Widget _messageCard() => Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.sakuraSoft,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        child: Text(
-          _message!,
-          style: const TextStyle(
-            color: AppColors.sakura,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      );
-
-  Widget _emptyCard() => Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
-        child: Column(
-          children: [
-            const Icon(Icons.bookmark_border_rounded,
-                color: AppColors.mute, size: 24),
-            const SizedBox(height: 8),
-            Text('Saved words will appear here.', style: AppTextStyles.caption),
-          ],
-        ),
-      );
 
   Future<void> _loadBookmarks() async {
     setState(() {

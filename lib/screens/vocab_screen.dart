@@ -8,6 +8,7 @@ import '../features/bookmarks/repositories/bookmark_repository.dart';
 import '../features/lessons/models/lesson.dart';
 import '../features/vocabulary/models/vocabulary.dart';
 import '../features/vocabulary/state/vocabulary_controller.dart';
+import '../shared/widgets/app_state_widgets.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 import '../widgets/primary_button.dart';
@@ -145,27 +146,28 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
           ),
           const SizedBox(height: 12),
           if (isOffline)
-            _StatusBanner(
-              icon: Icons.cloud_off_rounded,
-              text: 'Showing cached vocabulary',
-              color: AppColors.gold,
-            ),
+            AppStatusBanner.offline(message: 'Showing cached vocabulary'),
           if (hasError && state.message != null)
-            _StatusBanner(
-              icon: Icons.error_outline_rounded,
-              text: state.message!,
-              color: AppColors.sakura,
+            AppStatusBanner.error(
+              message: state.message!,
               onRetry: () => ref.read(vocabularyProvider.notifier).retry(),
             ),
           Expanded(
             child: isLoading && list.isEmpty
-                ? const Center(child: CircularProgressIndicator())
+                ? const AppLoadingState(message: 'Loading vocabulary...')
                 : list.isEmpty
-                    ? _EmptyVocabulary(
-                        isOffline: hasError || isOffline,
-                        onRetry: () =>
-                            ref.read(vocabularyProvider.notifier).retry(),
-                      )
+                    ? (hasError || isOffline
+                        ? AppStatePlaceholder.offline(
+                            title: 'Lesson not available offline',
+                            onRetry: () =>
+                                ref.read(vocabularyProvider.notifier).retry(),
+                          )
+                        : AppStatePlaceholder.empty(
+                            icon: Icons.translate_outlined,
+                            title: 'No vocabulary found.',
+                            onRetry: () =>
+                                ref.read(vocabularyProvider.notifier).retry(),
+                          ))
                     : RefreshIndicator(
                         onRefresh: () =>
                             ref.read(vocabularyProvider.notifier).retry(),
@@ -343,69 +345,5 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
       });
       _showAudioMessage(ApiClient.describeError(error));
     }
-  }
-}
-
-class _StatusBanner extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Color color;
-  final VoidCallback? onRetry;
-
-  const _StatusBanner({
-    required this.icon,
-    required this.text,
-    required this.color,
-    this.onRetry,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      child: Row(children: [
-        Icon(icon, color: color, size: 18),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(text,
-              style: TextStyle(
-                  color: color, fontSize: 12, fontWeight: FontWeight.w700)),
-        ),
-        if (onRetry != null)
-          TextButton(onPressed: onRetry, child: const Text('Retry')),
-      ]),
-    );
-  }
-}
-
-class _EmptyVocabulary extends StatelessWidget {
-  final bool isOffline;
-  final VoidCallback onRetry;
-
-  const _EmptyVocabulary({
-    required this.isOffline,
-    required this.onRetry,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            isOffline ? 'Lesson not available offline' : 'No vocabulary found.',
-            style: AppTextStyles.caption,
-          ),
-          const SizedBox(height: 8),
-          TextButton(onPressed: onRetry, child: const Text('Retry')),
-        ],
-      ),
-    );
   }
 }

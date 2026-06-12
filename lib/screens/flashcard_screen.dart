@@ -8,7 +8,7 @@ import '../features/flashcards/repositories/flashcard_session_repository.dart';
 import '../features/flashcards/screens/flashcard_summary_screen.dart';
 import '../features/vocabulary/models/vocabulary.dart';
 import '../features/vocabulary/state/vocabulary_controller.dart';
-import '../theme/app_theme.dart';
+import '../shared/widgets/app_state_widgets.dart';
 import '../theme/tokens.dart';
 import '../widgets/flashcard.dart';
 
@@ -111,14 +111,23 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
             Expanded(
               child: Center(
                 child: isLoading && cards.isEmpty && widget.initialCards == null
-                    ? const CircularProgressIndicator()
+                    ? const AppLoadingState(message: 'Loading flashcards...')
                     : cards.isEmpty
-                        ? _EmptyFlashcards(
-                            isOffline: isOffline || hasError,
-                            message: state.message,
-                            onRetry: () =>
-                                ref.read(vocabularyProvider.notifier).retry(),
-                          )
+                        ? (isOffline || hasError
+                            ? AppStatePlaceholder.offline(
+                                title: 'Lesson not available offline',
+                                message: state.message,
+                                onRetry: () => ref
+                                    .read(vocabularyProvider.notifier)
+                                    .retry(),
+                              )
+                            : AppStatePlaceholder.empty(
+                                icon: Icons.style_outlined,
+                                title: 'No flashcards found.',
+                                onRetry: () => ref
+                                    .read(vocabularyProvider.notifier)
+                                    .retry(),
+                              ))
                         : FlipFlashcard(
                             key: ValueKey(currentCard?.id),
                             kanji: currentCard?.word ?? '',
@@ -297,36 +306,6 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
-    );
-  }
-}
-
-class _EmptyFlashcards extends StatelessWidget {
-  final bool isOffline;
-  final String? message;
-  final VoidCallback onRetry;
-
-  const _EmptyFlashcards({
-    required this.isOffline,
-    required this.message,
-    required this.onRetry,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          isOffline
-              ? 'Lesson not available offline'
-              : message ?? 'No flashcards found.',
-          style: AppTextStyles.caption,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        TextButton(onPressed: onRetry, child: const Text('Retry')),
-      ],
     );
   }
 }
