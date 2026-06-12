@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/services.dart';
 
 import 'features/auth/state/auth_state.dart';
+import 'features/settings/repositories/app_preferences_repository.dart';
 import 'theme/app_theme.dart';
 import 'theme/tokens.dart';
 import 'widgets/bottom_nav.dart';
@@ -71,8 +72,12 @@ class SakuraApp extends ConsumerWidget {
       ),
       navigatorKey: _GlobalKey.navKey,
       routes: {
-        '/onboarding': (c) =>
-            OnboardingScreen(onDone: () => _nav(c, '/login', replace: true)),
+        '/onboarding': (c) => OnboardingScreen(
+              onDone: () async {
+                await AppPreferencesRepository().setOnboardingCompleted(true);
+                if (c.mounted) _nav(c, '/login', replace: true);
+              },
+            ),
         '/login': (c) => LoginScreen(
               onLogin: () => _nav(c, '/main', clearStack: true),
               onRegister: () => _nav(c, '/register'),
@@ -166,7 +171,13 @@ class SakuraApp extends ConsumerWidget {
       debugPrint('[NAV] restoreSession failed/timed out: $e');
       // On failure or timeout, treat as unauthenticated — show onboarding.
     }
-    final route = isAuthenticated ? '/main' : '/onboarding';
+    final onboardingCompleted =
+        await AppPreferencesRepository().isOnboardingCompleted();
+    final route = isAuthenticated
+        ? '/main'
+        : onboardingCompleted
+            ? '/login'
+            : '/onboarding';
     debugPrint('[NAV] navigating to: $route');
     _navFromRoot(route, clearStack: true);
   }

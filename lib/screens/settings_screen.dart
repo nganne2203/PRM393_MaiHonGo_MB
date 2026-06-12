@@ -1,17 +1,36 @@
 import 'package:flutter/material.dart';
+import '../features/settings/repositories/app_preferences_repository.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback onLogout;
-  const SettingsScreen({super.key, required this.onLogout});
+  final AppPreferencesRepository preferencesRepository;
+
+  SettingsScreen({
+    super.key,
+    required this.onLogout,
+    AppPreferencesRepository? preferencesRepository,
+  }) : preferencesRepository =
+            preferencesRepository ?? AppPreferencesRepository();
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _dark = false, _notif = true, _audio = true;
+  AppSettings _settings = const AppSettings.defaults();
+  bool _loading = true;
+
+  bool get _dark => _settings.darkModeEnabled;
+  bool get _notif => _settings.notificationsEnabled;
+  bool get _audio => _settings.soundEffectsEnabled;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +47,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 16),
+            if (_loading)
+              const LinearProgressIndicator(minHeight: 2)
+            else
+              const SizedBox(height: 2),
+            const SizedBox(height: 14),
             _section('PREFERENCES'),
             _toggleRow(
               Icons.dark_mode_outlined,
@@ -36,7 +60,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Dark Mode',
               'Easy on the eyes at night',
               _dark,
-              (v) => setState(() => _dark = v),
+              _setDarkMode,
             ),
             _toggleRow(
               Icons.notifications_outlined,
@@ -45,7 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Notifications',
               'Daily reminders to study',
               _notif,
-              (v) => setState(() => _notif = v),
+              _setNotifications,
             ),
             _toggleRow(
               Icons.volume_up_outlined,
@@ -54,7 +78,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Sound Effects',
               'Audio feedback in app',
               _audio,
-              (v) => setState(() => _audio = v),
+              _setSoundEffects,
             ),
             const SizedBox(height: 16),
             _section('LEARNING'),
@@ -131,6 +155,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.fromLTRB(4, 0, 0, 8),
         child: Text(s, style: AppTextStyles.overline),
       );
+
+  Future<void> _loadSettings() async {
+    final settings = await widget.preferencesRepository.getSettings();
+    if (!mounted) return;
+    setState(() {
+      _settings = settings;
+      _loading = false;
+    });
+  }
+
+  Future<void> _setDarkMode(bool value) async {
+    setState(() => _settings = _settings.copyWith(darkModeEnabled: value));
+    final settings =
+        await widget.preferencesRepository.setDarkModeEnabled(value);
+    if (mounted) setState(() => _settings = settings);
+  }
+
+  Future<void> _setNotifications(bool value) async {
+    setState(() => _settings = _settings.copyWith(notificationsEnabled: value));
+    final settings =
+        await widget.preferencesRepository.setNotificationsEnabled(value);
+    if (mounted) setState(() => _settings = settings);
+  }
+
+  Future<void> _setSoundEffects(bool value) async {
+    setState(() => _settings = _settings.copyWith(soundEffectsEnabled: value));
+    final settings =
+        await widget.preferencesRepository.setSoundEffectsEnabled(value);
+    if (mounted) setState(() => _settings = settings);
+  }
 
   Widget _row(
     Widget leading,
