@@ -162,7 +162,7 @@ class _CategoryCard extends StatelessWidget {
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.15),
+                  color: AppColors.ink.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 alignment: Alignment.topRight,

@@ -16,6 +16,8 @@ class SpeakingState {
   final SpeakingViewStatus status;
   final List<SpeakingPrompt> prompts;
   final int selectedIndex;
+  final String? selectedLessonId;
+  final String? selectedLessonName;
   final String? audioPath;
   final SpeakingAttempt? latestAttempt;
   final String? message;
@@ -24,6 +26,8 @@ class SpeakingState {
     required this.status,
     required this.prompts,
     required this.selectedIndex,
+    this.selectedLessonId,
+    this.selectedLessonName,
     this.audioPath,
     this.latestAttempt,
     this.message,
@@ -33,6 +37,8 @@ class SpeakingState {
       : status = SpeakingViewStatus.idle,
         prompts = const [],
         selectedIndex = 0,
+        selectedLessonId = null,
+        selectedLessonName = null,
         audioPath = null,
         latestAttempt = null,
         message = null;
@@ -45,6 +51,8 @@ class SpeakingState {
     SpeakingViewStatus? status,
     List<SpeakingPrompt>? prompts,
     int? selectedIndex,
+    String? selectedLessonId,
+    String? selectedLessonName,
     String? audioPath,
     bool clearAudioPath = false,
     SpeakingAttempt? latestAttempt,
@@ -56,6 +64,8 @@ class SpeakingState {
         status: status ?? this.status,
         prompts: prompts ?? this.prompts,
         selectedIndex: selectedIndex ?? this.selectedIndex,
+        selectedLessonId: selectedLessonId ?? this.selectedLessonId,
+        selectedLessonName: selectedLessonName ?? this.selectedLessonName,
         audioPath: clearAudioPath ? null : audioPath ?? this.audioPath,
         latestAttempt:
             clearLatestAttempt ? null : latestAttempt ?? this.latestAttempt,

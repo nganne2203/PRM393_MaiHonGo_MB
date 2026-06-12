@@ -9,9 +9,9 @@ class LocalLesson {
   @Index(unique: true, replace: true)
   late String serverId;
 
-  late String title;
-  late String category;
-  late String description;
+  String? title;
+  String? category;
+  String? description;
   late bool isOfflineReady;
   late int version;
   late bool downloaded;
@@ -27,13 +27,13 @@ class LocalVocabulary {
   @Index(unique: true, replace: true)
   late String serverId;
 
-  late String word;
-  late String hiragana;
-  late String meaningVi;
+  String? word;
+  String? hiragana;
+  String? meaningVi;
   late List<String> tags;
   late List<String> examples;
-  late String lessonId;
-  late String romaji;
+  String? lessonId;
+  String? romaji;
   late DateTime lastSyncedAt;
 }
 
@@ -47,5 +47,23 @@ class LocalContentPackage {
   late int version;
   late int size;
   late DateTime downloadedAt;
-  late String status;
+  String? status;
+}
+
+@collection
+class LocalFlashcardSessionResult {
+  Id id = Isar.autoIncrement;
+
+  String? lessonId;
+  late int totalCards;
+  late int learnedCount;
+  late int notLearnedCount;
+  late int accuracy;
+  late List<String> learnedVocabularyIds;
+  late List<String> notLearnedVocabularyIds;
+
+  @Index(unique: true, replace: true)
+  late DateTime completedAt;
+
+  late bool synced;
 }

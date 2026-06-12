@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/network/api_client.dart';
+import '../../lessons/models/lesson.dart';
+import '../../lessons/repositories/lesson_repository.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../state/speaking_controller.dart';
@@ -7,17 +10,24 @@ import '../state/speaking_state.dart';
 import '../widgets/speaking_result_card.dart';
 import 'speaking_history_screen.dart';
 
-class SpeakingPracticeScreen extends StatefulWidget {
-  static const defaultLessonId = String.fromEnvironment(
-    'SPEAKING_LESSON_ID',
-    defaultValue: '',
-  );
-
+class SpeakingPracticeArgs {
   final String? lessonId;
+  final String? lessonTitle;
+
+  const SpeakingPracticeArgs({
+    this.lessonId,
+    this.lessonTitle,
+  });
+}
+
+class SpeakingPracticeScreen extends StatefulWidget {
+  final String? lessonId;
+  final String? lessonTitle;
 
   const SpeakingPracticeScreen({
     super.key,
     this.lessonId,
+    this.lessonTitle,
   });
 
   @override
@@ -26,37 +36,47 @@ class SpeakingPracticeScreen extends StatefulWidget {
 
 class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
   late final SpeakingController _controller;
-  late final TextEditingController _lessonController;
+  final _apiClient = ApiClient();
+  List<Lesson> _lessons = const [];
+  Lesson? _selectedLesson;
+  bool _loadingLessons = false;
+  String? _lessonMessage;
 
   @override
   void initState() {
     super.initState();
     _controller = SpeakingController();
-    _lessonController = TextEditingController(
-      text: widget.lessonId?.isNotEmpty == true
-          ? widget.lessonId!
-          : SpeakingPracticeScreen.defaultLessonId,
-    );
-    if (_lessonController.text.isNotEmpty) {
-      _controller.loadPrompts(_lessonController.text.trim());
-    }
+    _bootstrapLessons();
   }
 
   @override
   void dispose() {
-    _lessonController.dispose();
     _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final title = _selectedLesson?.title ??
+        widget.lessonTitle ??
+        _controller.state.selectedLessonName;
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         backgroundColor: AppColors.bg,
         elevation: 0,
-        title: const Text('Speaking Practice'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Speaking Practice'),
+            if (title?.isNotEmpty == true)
+              Text(
+                title!,
+                style: AppTextStyles.caption,
+                overflow: TextOverflow.ellipsis,
+              ),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: 'History',
@@ -74,7 +94,7 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
           builder: (context, _) => ListView(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
             children: [
-              _lessonLoader(),
+              _lessonSelector(),
               const SizedBox(height: 16),
               if (_controller.state.status == SpeakingViewStatus.loading)
                 const Center(child: CircularProgressIndicator())
@@ -87,7 +107,12 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
     );
   }
 
-  Widget _lessonLoader() {
+  Widget _lessonSelector() {
+    final locked = widget.lessonId?.isNotEmpty == true;
+    final title = _selectedLesson?.title ??
+        widget.lessonTitle ??
+        _controller.state.selectedLessonName;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -95,24 +120,54 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: TextField(
-              controller: _lessonController,
+          Text('Lesson', style: AppTextStyles.caption),
+          const SizedBox(height: 8),
+          if (locked)
+            Text(
+              title?.isNotEmpty == true ? title! : 'Current lesson',
+              style: AppTextStyles.h3,
+              overflow: TextOverflow.ellipsis,
+            )
+          else if (_loadingLessons)
+            const LinearProgressIndicator(minHeight: 4)
+          else if (_lessons.isEmpty)
+            Text(
+              _lessonMessage ?? 'Select a lesson to start speaking practice.',
+              style: AppTextStyles.body,
+            )
+          else
+            DropdownButtonFormField<String>(
+              initialValue: _selectedLesson?.id,
               decoration: const InputDecoration(
-                labelText: 'Lesson ID',
-                hintText: 'Paste a backend lesson id',
+                labelText: 'Select Lesson',
               ),
+              items: [
+                for (final lesson in _lessons)
+                  DropdownMenuItem(
+                    value: lesson.id,
+                    child: Text(
+                      lesson.title.isEmpty ? 'Untitled lesson' : lesson.title,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+              onChanged: (lessonId) {
+                final lesson = _lessons
+                    .where((item) => item.id == lessonId)
+                    .cast<Lesson?>()
+                    .firstOrNull;
+                if (lesson == null) return;
+                _selectLesson(lesson);
+              },
             ),
-          ),
-          const SizedBox(width: 10),
-          IconButton.filled(
-            tooltip: 'Load prompts',
-            onPressed: () =>
-                _controller.loadPrompts(_lessonController.text.trim()),
-            icon: const Icon(Icons.search_rounded),
-          ),
+          if (_lessonMessage != null && !_loadingLessons && _lessons.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(_lessonMessage!, style: AppTextStyles.caption),
+            ),
         ],
       ),
     );
@@ -129,7 +184,7 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
           const SizedBox(height: 16),
           _recordingControls(state),
         ] else
-          _emptyCard(),
+          _emptyCard(state),
         if (state.latestAttempt != null) ...[
           const SizedBox(height: 16),
           SpeakingResultCard(
@@ -260,8 +315,9 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
               Expanded(
                 child: FilledButton.icon(
                   onPressed: hasRecording && !isRecording && !isSubmitting
-                      ? () => _controller
-                          .submitRecording(_lessonController.text.trim())
+                      ? () => _controller.submitRecording(
+                            state.selectedLessonId ?? _selectedLesson?.id ?? '',
+                          )
                       : null,
                   icon: isSubmitting
                       ? const SizedBox(
@@ -300,7 +356,7 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
     );
   }
 
-  Widget _emptyCard() => Container(
+  Widget _emptyCard(SpeakingState state) => Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -308,8 +364,56 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
           boxShadow: AppShadows.card,
         ),
         child: Text(
-          'Load a lesson to begin speaking practice.',
+          state.selectedLessonId == null
+              ? 'Select a lesson to start speaking practice.'
+              : 'No speaking exercises are available for this lesson yet.',
           style: AppTextStyles.body,
         ),
       );
+
+  Future<void> _bootstrapLessons() async {
+    final lockedLessonId = widget.lessonId;
+    if (lockedLessonId != null && lockedLessonId.isNotEmpty) {
+      await _controller.loadPrompts(
+        lockedLessonId,
+        lessonTitle: widget.lessonTitle,
+      );
+      return;
+    }
+
+    setState(() {
+      _loadingLessons = true;
+      _lessonMessage = null;
+    });
+    try {
+      final response = await _apiClient.dio.get('/lessons');
+      final lessons = LessonRepository.parseLessonListEnvelope(response.data);
+      if (!mounted) return;
+      setState(() {
+        _lessons = lessons;
+        _loadingLessons = false;
+        _lessonMessage = lessons.isEmpty
+            ? 'Select a lesson to start speaking practice.'
+            : null;
+      });
+      if (lessons.length == 1) {
+        _selectLesson(lessons.first);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadingLessons = false;
+        _lessonMessage =
+            'Speaking practice is unavailable offline because this lesson has not been downloaded.';
+      });
+    }
+  }
+
+  Future<void> _selectLesson(Lesson lesson) async {
+    setState(() {
+      _selectedLesson = lesson;
+      _lessonMessage = null;
+    });
+    await _controller.loadPrompts(lesson.id, lessonTitle: lesson.title);
+  }
 }
