@@ -20,6 +20,7 @@ import 'screens/saved_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
 import 'features/speaking/screens/speaking_practice_screen.dart';
+import 'features/listening/screens/listening_practice_screen.dart';
 import 'features/offline/screens/offline_downloads_screen.dart';
 
 Future<void> main() async {
@@ -107,8 +108,18 @@ class SakuraApp extends ConsumerWidget {
             }),
         '/offline-downloads': (_) => const OfflineDownloadsScreen(),
         '/speaking': (c) {
+          final args = ModalRoute.of(c)?.settings.arguments;
+          if (args is SpeakingPracticeArgs) {
+            return SpeakingPracticeScreen(
+              lessonId: args.lessonId,
+              lessonTitle: args.lessonTitle,
+            );
+          }
+          return const SpeakingPracticeScreen();
+        },
+        '/listening': (c) {
           final lessonId = ModalRoute.of(c)?.settings.arguments as String?;
-          return SpeakingPracticeScreen(lessonId: lessonId);
+          return ListeningPracticeScreen(lessonId: lessonId);
         },
       },
     );
@@ -184,9 +195,24 @@ class _MainShellState extends State<MainShell> {
         ),
         onSeeAllPractice: () => setState(() => _index = 1),
         onStartQuiz: () => Navigator.pushNamed(context, '/quiz'),
-        onStartSpeaking: (lessonId) => Navigator.pushNamed(
+        onStartSpeaking: (lesson) {
+          if (lesson != null && lesson.lessonId.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => SpeakingPracticeScreen(
+                  lessonId: lesson.lessonId,
+                  lessonTitle: lesson.title,
+                ),
+              ),
+            );
+            return;
+          }
+          Navigator.pushNamed(context, '/speaking');
+        },
+        onStartListening: (lessonId) => Navigator.pushNamed(
           context,
-          '/speaking',
+          '/listening',
           arguments: lessonId,
         ),
         onOpenSaved: () => setState(() => _index = 2),

@@ -102,10 +102,25 @@ int _localLessonEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
-  bytesCount += 3 + object.category.length * 3;
-  bytesCount += 3 + object.description.length * 3;
+  {
+    final value = object.category;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.description;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.serverId.length * 3;
-  bytesCount += 3 + object.title.length * 3;
+  {
+    final value = object.title;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.vocabIds.length * 3;
   {
     for (var i = 0; i < object.vocabIds.length; i++) {
@@ -141,15 +156,15 @@ LocalLesson _localLessonDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = LocalLesson();
-  object.category = reader.readString(offsets[0]);
-  object.description = reader.readString(offsets[1]);
+  object.category = reader.readStringOrNull(offsets[0]);
+  object.description = reader.readStringOrNull(offsets[1]);
   object.downloaded = reader.readBool(offsets[2]);
   object.id = id;
   object.isOfflineReady = reader.readBool(offsets[3]);
   object.lastSyncedAt = reader.readDateTime(offsets[4]);
   object.serverId = reader.readString(offsets[5]);
   object.size = reader.readLong(offsets[6]);
-  object.title = reader.readString(offsets[7]);
+  object.title = reader.readStringOrNull(offsets[7]);
   object.version = reader.readLong(offsets[8]);
   object.vocabIds = reader.readStringList(offsets[9]) ?? [];
   return object;
@@ -163,9 +178,9 @@ P _localLessonDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
       return (reader.readBool(offset)) as P;
     case 3:
@@ -177,7 +192,7 @@ P _localLessonDeserializeProp<P>(
     case 6:
       return (reader.readLong(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 8:
       return (reader.readLong(offset)) as P;
     case 9:
@@ -380,8 +395,26 @@ extension LocalLessonQueryWhere
 
 extension LocalLessonQueryFilter
     on QueryBuilder<LocalLesson, LocalLesson, QFilterCondition> {
+  QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition>
+      categoryIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'category',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition>
+      categoryIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'category',
+      ));
+    });
+  }
+
   QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition> categoryEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -395,7 +428,7 @@ extension LocalLessonQueryFilter
 
   QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition>
       categoryGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -411,7 +444,7 @@ extension LocalLessonQueryFilter
 
   QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition>
       categoryLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -426,8 +459,8 @@ extension LocalLessonQueryFilter
   }
 
   QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition> categoryBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -516,8 +549,26 @@ extension LocalLessonQueryFilter
   }
 
   QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition>
+      descriptionIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'description',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition>
+      descriptionIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'description',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition>
       descriptionEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -531,7 +582,7 @@ extension LocalLessonQueryFilter
 
   QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition>
       descriptionGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -547,7 +598,7 @@ extension LocalLessonQueryFilter
 
   QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition>
       descriptionLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -563,8 +614,8 @@ extension LocalLessonQueryFilter
 
   QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition>
       descriptionBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -968,8 +1019,25 @@ extension LocalLessonQueryFilter
     });
   }
 
+  QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition> titleIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'title',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition>
+      titleIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'title',
+      ));
+    });
+  }
+
   QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition> titleEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -983,7 +1051,7 @@ extension LocalLessonQueryFilter
 
   QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition>
       titleGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -998,7 +1066,7 @@ extension LocalLessonQueryFilter
   }
 
   QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition> titleLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1013,8 +1081,8 @@ extension LocalLessonQueryFilter
   }
 
   QueryBuilder<LocalLesson, LocalLesson, QAfterFilterCondition> titleBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -1699,13 +1767,13 @@ extension LocalLessonQueryProperty
     });
   }
 
-  QueryBuilder<LocalLesson, String, QQueryOperations> categoryProperty() {
+  QueryBuilder<LocalLesson, String?, QQueryOperations> categoryProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'category');
     });
   }
 
-  QueryBuilder<LocalLesson, String, QQueryOperations> descriptionProperty() {
+  QueryBuilder<LocalLesson, String?, QQueryOperations> descriptionProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'description');
     });
@@ -1741,7 +1809,7 @@ extension LocalLessonQueryProperty
     });
   }
 
-  QueryBuilder<LocalLesson, String, QQueryOperations> titleProperty() {
+  QueryBuilder<LocalLesson, String?, QQueryOperations> titleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'title');
     });
@@ -1858,10 +1926,30 @@ int _localVocabularyEstimateSize(
       bytesCount += value.length * 3;
     }
   }
-  bytesCount += 3 + object.hiragana.length * 3;
-  bytesCount += 3 + object.lessonId.length * 3;
-  bytesCount += 3 + object.meaningVi.length * 3;
-  bytesCount += 3 + object.romaji.length * 3;
+  {
+    final value = object.hiragana;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.lessonId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.meaningVi;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.romaji;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.serverId.length * 3;
   bytesCount += 3 + object.tags.length * 3;
   {
@@ -1870,7 +1958,12 @@ int _localVocabularyEstimateSize(
       bytesCount += value.length * 3;
     }
   }
-  bytesCount += 3 + object.word.length * 3;
+  {
+    final value = object.word;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -1899,15 +1992,15 @@ LocalVocabulary _localVocabularyDeserialize(
 ) {
   final object = LocalVocabulary();
   object.examples = reader.readStringList(offsets[0]) ?? [];
-  object.hiragana = reader.readString(offsets[1]);
+  object.hiragana = reader.readStringOrNull(offsets[1]);
   object.id = id;
   object.lastSyncedAt = reader.readDateTime(offsets[2]);
-  object.lessonId = reader.readString(offsets[3]);
-  object.meaningVi = reader.readString(offsets[4]);
-  object.romaji = reader.readString(offsets[5]);
+  object.lessonId = reader.readStringOrNull(offsets[3]);
+  object.meaningVi = reader.readStringOrNull(offsets[4]);
+  object.romaji = reader.readStringOrNull(offsets[5]);
   object.serverId = reader.readString(offsets[6]);
   object.tags = reader.readStringList(offsets[7]) ?? [];
-  object.word = reader.readString(offsets[8]);
+  object.word = reader.readStringOrNull(offsets[8]);
   return object;
 }
 
@@ -1921,21 +2014,21 @@ P _localVocabularyDeserializeProp<P>(
     case 0:
       return (reader.readStringList(offset) ?? []) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
       return (reader.readDateTime(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
       return (reader.readString(offset)) as P;
     case 7:
       return (reader.readStringList(offset) ?? []) as P;
     case 8:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -2362,8 +2455,26 @@ extension LocalVocabularyQueryFilter
   }
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
+      hiraganaIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'hiragana',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
+      hiraganaIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'hiragana',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       hiraganaEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -2377,7 +2488,7 @@ extension LocalVocabularyQueryFilter
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       hiraganaGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -2393,7 +2504,7 @@ extension LocalVocabularyQueryFilter
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       hiraganaLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -2409,8 +2520,8 @@ extension LocalVocabularyQueryFilter
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       hiraganaBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -2610,8 +2721,26 @@ extension LocalVocabularyQueryFilter
   }
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
+      lessonIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lessonId',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
+      lessonIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lessonId',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       lessonIdEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -2625,7 +2754,7 @@ extension LocalVocabularyQueryFilter
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       lessonIdGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -2641,7 +2770,7 @@ extension LocalVocabularyQueryFilter
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       lessonIdLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -2657,8 +2786,8 @@ extension LocalVocabularyQueryFilter
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       lessonIdBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -2746,8 +2875,26 @@ extension LocalVocabularyQueryFilter
   }
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
+      meaningViIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'meaningVi',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
+      meaningViIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'meaningVi',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       meaningViEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -2761,7 +2908,7 @@ extension LocalVocabularyQueryFilter
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       meaningViGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -2777,7 +2924,7 @@ extension LocalVocabularyQueryFilter
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       meaningViLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -2793,8 +2940,8 @@ extension LocalVocabularyQueryFilter
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       meaningViBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -2882,8 +3029,26 @@ extension LocalVocabularyQueryFilter
   }
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
+      romajiIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'romaji',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
+      romajiIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'romaji',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       romajiEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -2897,7 +3062,7 @@ extension LocalVocabularyQueryFilter
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       romajiGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -2913,7 +3078,7 @@ extension LocalVocabularyQueryFilter
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       romajiLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -2929,8 +3094,8 @@ extension LocalVocabularyQueryFilter
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       romajiBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -3379,8 +3544,26 @@ extension LocalVocabularyQueryFilter
   }
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
+      wordIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'word',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
+      wordIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'word',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       wordEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -3394,7 +3577,7 @@ extension LocalVocabularyQueryFilter
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       wordGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -3410,7 +3593,7 @@ extension LocalVocabularyQueryFilter
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       wordLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -3426,8 +3609,8 @@ extension LocalVocabularyQueryFilter
 
   QueryBuilder<LocalVocabulary, LocalVocabulary, QAfterFilterCondition>
       wordBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -3811,7 +3994,7 @@ extension LocalVocabularyQueryProperty
     });
   }
 
-  QueryBuilder<LocalVocabulary, String, QQueryOperations> hiraganaProperty() {
+  QueryBuilder<LocalVocabulary, String?, QQueryOperations> hiraganaProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'hiragana');
     });
@@ -3824,19 +4007,19 @@ extension LocalVocabularyQueryProperty
     });
   }
 
-  QueryBuilder<LocalVocabulary, String, QQueryOperations> lessonIdProperty() {
+  QueryBuilder<LocalVocabulary, String?, QQueryOperations> lessonIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lessonId');
     });
   }
 
-  QueryBuilder<LocalVocabulary, String, QQueryOperations> meaningViProperty() {
+  QueryBuilder<LocalVocabulary, String?, QQueryOperations> meaningViProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'meaningVi');
     });
   }
 
-  QueryBuilder<LocalVocabulary, String, QQueryOperations> romajiProperty() {
+  QueryBuilder<LocalVocabulary, String?, QQueryOperations> romajiProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'romaji');
     });
@@ -3854,7 +4037,7 @@ extension LocalVocabularyQueryProperty
     });
   }
 
-  QueryBuilder<LocalVocabulary, String, QQueryOperations> wordProperty() {
+  QueryBuilder<LocalVocabulary, String?, QQueryOperations> wordProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'word');
     });
@@ -3934,7 +4117,12 @@ int _localContentPackageEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.lessonId.length * 3;
-  bytesCount += 3 + object.status.length * 3;
+  {
+    final value = object.status;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -3962,7 +4150,7 @@ LocalContentPackage _localContentPackageDeserialize(
   object.id = id;
   object.lessonId = reader.readString(offsets[1]);
   object.size = reader.readLong(offsets[2]);
-  object.status = reader.readString(offsets[3]);
+  object.status = reader.readStringOrNull(offsets[3]);
   object.version = reader.readLong(offsets[4]);
   return object;
 }
@@ -3981,7 +4169,7 @@ P _localContentPackageDeserializeProp<P>(
     case 2:
       return (reader.readLong(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
       return (reader.readLong(offset)) as P;
     default:
@@ -4491,8 +4679,26 @@ extension LocalContentPackageQueryFilter on QueryBuilder<LocalContentPackage,
   }
 
   QueryBuilder<LocalContentPackage, LocalContentPackage, QAfterFilterCondition>
+      statusIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'status',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalContentPackage, LocalContentPackage, QAfterFilterCondition>
+      statusIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'status',
+      ));
+    });
+  }
+
+  QueryBuilder<LocalContentPackage, LocalContentPackage, QAfterFilterCondition>
       statusEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -4506,7 +4712,7 @@ extension LocalContentPackageQueryFilter on QueryBuilder<LocalContentPackage,
 
   QueryBuilder<LocalContentPackage, LocalContentPackage, QAfterFilterCondition>
       statusGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -4522,7 +4728,7 @@ extension LocalContentPackageQueryFilter on QueryBuilder<LocalContentPackage,
 
   QueryBuilder<LocalContentPackage, LocalContentPackage, QAfterFilterCondition>
       statusLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -4538,8 +4744,8 @@ extension LocalContentPackageQueryFilter on QueryBuilder<LocalContentPackage,
 
   QueryBuilder<LocalContentPackage, LocalContentPackage, QAfterFilterCondition>
       statusBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -4915,7 +5121,8 @@ extension LocalContentPackageQueryProperty
     });
   }
 
-  QueryBuilder<LocalContentPackage, String, QQueryOperations> statusProperty() {
+  QueryBuilder<LocalContentPackage, String?, QQueryOperations>
+      statusProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'status');
     });

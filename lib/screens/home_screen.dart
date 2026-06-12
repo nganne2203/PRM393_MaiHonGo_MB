@@ -10,7 +10,8 @@ class HomeScreen extends ConsumerWidget {
   final ValueChanged<String?> onStartLesson;
   final VoidCallback onSeeAllPractice;
   final VoidCallback onStartQuiz;
-  final ValueChanged<String?> onStartSpeaking;
+  final ValueChanged<ContinueLearning?> onStartSpeaking;
+  final ValueChanged<String?> onStartListening;
   final VoidCallback onOpenSaved;
 
   const HomeScreen({
@@ -19,6 +20,7 @@ class HomeScreen extends ConsumerWidget {
     required this.onSeeAllPractice,
     required this.onStartQuiz,
     required this.onStartSpeaking,
+    required this.onStartListening,
     required this.onOpenSaved,
   });
 
@@ -329,7 +331,7 @@ class HomeScreen extends ConsumerWidget {
               iconFg: AppColors.gold,
               title: 'Speaking',
               subtitle: practice.speakingLabel,
-              onTap: () => onStartSpeaking(lessonId),
+              onTap: () => onStartSpeaking(summary.continueLearning),
             ),
           ],
         ),
@@ -345,7 +347,14 @@ class HomeScreen extends ConsumerWidget {
               onTap: onOpenSaved,
             ),
             const SizedBox(width: 12),
-            const Expanded(child: SizedBox.shrink()),
+            _practiceCard(
+              icon: Icons.headphones_rounded,
+              iconBg: AppColors.goldSoft,
+              iconFg: AppColors.gold,
+              title: 'Listening',
+              subtitle: 'Audio practice',
+              onTap: () => onStartListening(lessonId),
+            ),
           ],
         ),
       ],

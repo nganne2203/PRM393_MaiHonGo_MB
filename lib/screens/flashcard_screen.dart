@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/network/api_client.dart';
 import '../core/state/content_state.dart';
+import '../features/bookmarks/repositories/bookmark_repository.dart';
 import '../features/vocabulary/models/vocabulary.dart';
 import '../features/vocabulary/state/vocabulary_controller.dart';
 import '../theme/app_theme.dart';
@@ -20,22 +22,25 @@ class FlashcardScreen extends ConsumerStatefulWidget {
 
 class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
   int _i = 0;
-  bool _saved = false;
+  final Set<String> _savedIds = {};
+  final _bookmarkRepository = BookmarkRepository();
 
   @override
   void initState() {
     super.initState();
     Future.microtask(
-      () => ref
-          .read(vocabularyProvider.notifier)
-          .loadVocabulary(lessonId: widget.lessonId),
+      () async {
+        await ref
+            .read(vocabularyProvider.notifier)
+            .loadVocabulary(lessonId: widget.lessonId);
+        await _loadBookmarks();
+      },
     );
   }
 
   void _next(List<Vocabulary> cards) => setState(() {
         if (cards.isEmpty) return;
         _i = (_i + 1) % cards.length;
-        _saved = false;
       });
 
   @override
@@ -46,6 +51,9 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
     final isOffline = state.status == ContentStatus.offline;
     final hasError = state.status == ContentStatus.error;
     if (_i >= cards.length && cards.isNotEmpty) _i = 0;
+    final currentCard = cards.isEmpty ? null : cards[_i];
+    final isSaved =
+        currentCard == null ? false : _savedIds.contains(currentCard.id);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -80,12 +88,14 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                 ),
               ),
               IconButton(
-                onPressed: () => setState(() => _saved = !_saved),
+                onPressed: currentCard == null
+                    ? null
+                    : () => _toggleBookmark(currentCard),
                 icon: Icon(
-                    _saved
+                    isSaved
                         ? Icons.bookmark_rounded
                         : Icons.bookmark_border_rounded,
-                    color: _saved ? AppColors.sakura : AppColors.mute),
+                    color: isSaved ? AppColors.sakura : AppColors.mute),
               ),
             ]),
             const SizedBox(height: 16),
@@ -113,6 +123,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                               meaning: cards[_i].meaningVi,
                               example: _example(cards[_i]).$1,
                               exampleTr: _example(cards[_i]).$2,
+                              audioUrl: cards[_i].audioUrl,
                             ),
                           ),
               ),
@@ -159,6 +170,61 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
     if (vocabulary.examples.isEmpty) return ('', '');
     final example = vocabulary.examples.first;
     return (example.jp, example.vi);
+  }
+
+  Future<void> _loadBookmarks() async {
+    try {
+      final ids = await _bookmarkRepository.getBookmarkedVocabIds();
+      if (!mounted) return;
+      setState(() {
+        _savedIds
+          ..clear()
+          ..addAll(ids);
+      });
+    } catch (_) {
+      // Flashcards should remain usable if saved state cannot be fetched.
+    }
+  }
+
+  Future<void> _toggleBookmark(Vocabulary vocabulary) async {
+    if (vocabulary.id.isEmpty) {
+      _showMessage('Cannot bookmark this vocabulary item yet.');
+      return;
+    }
+
+    final wasSaved = _savedIds.contains(vocabulary.id);
+    setState(() {
+      if (wasSaved) {
+        _savedIds.remove(vocabulary.id);
+      } else {
+        _savedIds.add(vocabulary.id);
+      }
+    });
+
+    try {
+      if (wasSaved) {
+        await _bookmarkRepository.removeBookmark(vocabulary.id);
+      } else {
+        await _bookmarkRepository.addBookmark(vocabulary.id);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        if (wasSaved) {
+          _savedIds.add(vocabulary.id);
+        } else {
+          _savedIds.remove(vocabulary.id);
+        }
+      });
+      _showMessage(ApiClient.describeError(error));
+    }
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 }
 

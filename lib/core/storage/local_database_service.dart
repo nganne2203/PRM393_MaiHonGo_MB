@@ -91,7 +91,7 @@ class LocalDatabaseService {
 
   Future<List<Lesson>> getLessons() async {
     final lessons = await isar.localLessons.where().findAll();
-    lessons.sort((a, b) => a.title.compareTo(b.title));
+    lessons.sort((a, b) => (a.title ?? '').compareTo(b.title ?? ''));
     return lessons.map(_lessonFromLocal).toList();
   }
 
@@ -108,7 +108,7 @@ class LocalDatabaseService {
     final filtered = lessonId == null
         ? vocabulary
         : vocabulary.where((item) => item.lessonId == lessonId).toList();
-    filtered.sort((a, b) => a.word.compareTo(b.word));
+    filtered.sort((a, b) => (a.word ?? '').compareTo(b.word ?? ''));
     return filtered.map(_vocabularyFromLocal).toList();
   }
 
@@ -188,9 +188,9 @@ class LocalDatabaseService {
   Lesson _lessonFromLocal(LocalLesson local) {
     return Lesson(
       id: local.serverId,
-      title: local.title,
-      category: local.category,
-      description: local.description,
+      title: local.title ?? '',
+      category: local.category ?? '',
+      description: local.description ?? '',
       isOfflineReady: local.isOfflineReady,
       downloadable: local.isOfflineReady,
       version: local.version,
@@ -215,13 +215,13 @@ class LocalDatabaseService {
 
     return Vocabulary(
       id: local.serverId,
-      word: local.word,
-      hiragana: local.hiragana,
-      romaji: local.romaji,
-      meaningVi: local.meaningVi,
+      word: local.word ?? '',
+      hiragana: local.hiragana ?? '',
+      romaji: local.romaji ?? '',
+      meaningVi: local.meaningVi ?? '',
       tags: local.tags,
       examples: examples,
-      lessonId: local.lessonId.isEmpty ? null : local.lessonId,
+      lessonId: (local.lessonId ?? '').isEmpty ? null : local.lessonId,
       updatedAt: local.lastSyncedAt,
     );
   }
