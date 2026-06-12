@@ -94,7 +94,7 @@ class OfflineRepository {
             lesson: lesson,
             size: package.size,
             downloadedAt: package.downloadedAt,
-            status: package.status,
+            status: package.status ?? 'downloaded',
           );
         })
         .whereType<DownloadedLesson>()

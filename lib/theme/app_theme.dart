@@ -38,12 +38,22 @@ class AppTheme {
   static ThemeData light() {
     return ThemeData(
       useMaterial3: true,
+      brightness: Brightness.light,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
+        brightness: Brightness.light,
         primary: AppColors.primary,
         surface: AppColors.surface,
       ),
       scaffoldBackgroundColor: AppColors.bg,
+      canvasColor: AppColors.bg,
+      cardColor: Colors.white,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.bg,
+        foregroundColor: AppColors.ink,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.inputBg,

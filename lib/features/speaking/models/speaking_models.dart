@@ -1,6 +1,7 @@
 class SpeakingPrompt {
   final String id;
   final String lessonId;
+  final String lessonTitle;
   final String? vocabId;
   final String promptText;
   final String expectedText;
@@ -11,6 +12,7 @@ class SpeakingPrompt {
   const SpeakingPrompt({
     required this.id,
     required this.lessonId,
+    required this.lessonTitle,
     this.vocabId,
     required this.promptText,
     required this.expectedText,
@@ -19,16 +21,24 @@ class SpeakingPrompt {
     required this.difficulty,
   });
 
-  factory SpeakingPrompt.fromJson(Map<String, dynamic> json) => SpeakingPrompt(
-        id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
-        lessonId: json['lessonId']?.toString() ?? '',
-        vocabId: json['vocabId']?.toString(),
-        promptText: json['promptText']?.toString() ?? '',
-        expectedText: json['expectedText']?.toString() ?? '',
-        expectedReading: json['expectedReading']?.toString() ?? '',
-        sampleAudioUrl: json['sampleAudioUrl']?.toString() ?? '',
-        difficulty: json['difficulty']?.toString() ?? 'beginner',
-      );
+  factory SpeakingPrompt.fromJson(Map<String, dynamic> json) {
+    final lesson = json['lessonId'];
+    final lessonJson = lesson is Map ? lesson : null;
+    return SpeakingPrompt(
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      lessonId:
+          lessonJson?['_id']?.toString() ?? json['lessonId']?.toString() ?? '',
+      lessonTitle: json['lessonTitle']?.toString() ??
+          lessonJson?['title']?.toString() ??
+          '',
+      vocabId: json['vocabId']?.toString(),
+      promptText: json['promptText']?.toString() ?? '',
+      expectedText: json['expectedText']?.toString() ?? '',
+      expectedReading: json['expectedReading']?.toString() ?? '',
+      sampleAudioUrl: json['sampleAudioUrl']?.toString() ?? '',
+      difficulty: json['difficulty']?.toString() ?? 'beginner',
+    );
+  }
 }
 
 class SpeakingAttempt {

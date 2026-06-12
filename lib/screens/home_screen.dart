@@ -9,8 +9,10 @@ import '../theme/tokens.dart';
 class HomeScreen extends ConsumerWidget {
   final ValueChanged<String?> onStartLesson;
   final VoidCallback onSeeAllPractice;
-  final VoidCallback onStartQuiz;
-  final ValueChanged<String?> onStartSpeaking;
+  final ValueChanged<ContinueLearning?> onStartQuiz;
+  final ValueChanged<ContinueLearning?> onStartSpeaking;
+  final ValueChanged<String?> onStartListening;
+  final ValueChanged<ContinueLearning?> onStartWriting;
   final VoidCallback onOpenSaved;
 
   const HomeScreen({
@@ -19,6 +21,8 @@ class HomeScreen extends ConsumerWidget {
     required this.onSeeAllPractice,
     required this.onStartQuiz,
     required this.onStartSpeaking,
+    required this.onStartListening,
+    required this.onStartWriting,
     required this.onOpenSaved,
   });
 
@@ -307,7 +311,7 @@ class HomeScreen extends ConsumerWidget {
               iconFg: AppColors.sky,
               title: 'Quiz',
               subtitle: '${practice.quizQuestionCount} questions',
-              onTap: onStartQuiz,
+              onTap: () => onStartQuiz(summary.continueLearning),
             ),
           ],
         ),
@@ -329,7 +333,7 @@ class HomeScreen extends ConsumerWidget {
               iconFg: AppColors.gold,
               title: 'Speaking',
               subtitle: practice.speakingLabel,
-              onTap: () => onStartSpeaking(lessonId),
+              onTap: () => onStartSpeaking(summary.continueLearning),
             ),
           ],
         ),
@@ -343,6 +347,28 @@ class HomeScreen extends ConsumerWidget {
               title: 'Saved',
               subtitle: '${practice.savedBookmarkCount} bookmarks',
               onTap: onOpenSaved,
+            ),
+            const SizedBox(width: 12),
+            _practiceCard(
+              icon: Icons.headphones_rounded,
+              iconBg: AppColors.goldSoft,
+              iconFg: AppColors.gold,
+              title: 'Listening',
+              subtitle: 'Audio practice',
+              onTap: () => onStartListening(lessonId),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _practiceCard(
+              icon: Icons.edit_note_rounded,
+              iconBg: AppColors.primarySoft,
+              iconFg: AppColors.primary,
+              title: 'Writing',
+              subtitle: 'Practice sentences',
+              onTap: () => onStartWriting(summary.continueLearning),
             ),
             const SizedBox(width: 12),
             const Expanded(child: SizedBox.shrink()),

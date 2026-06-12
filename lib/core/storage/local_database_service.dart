@@ -4,6 +4,7 @@ import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../features/lessons/models/lesson.dart';
+import '../../features/flashcards/models/flashcard_session.dart';
 import '../../features/vocabulary/models/vocabulary.dart';
 import 'local_models.dart';
 
@@ -19,6 +20,7 @@ class LocalDatabaseService {
         LocalLessonSchema,
         LocalVocabularySchema,
         LocalContentPackageSchema,
+        LocalFlashcardSessionResultSchema,
       ],
       directory: dir,
     );
@@ -91,7 +93,7 @@ class LocalDatabaseService {
 
   Future<List<Lesson>> getLessons() async {
     final lessons = await isar.localLessons.where().findAll();
-    lessons.sort((a, b) => a.title.compareTo(b.title));
+    lessons.sort((a, b) => (a.title ?? '').compareTo(b.title ?? ''));
     return lessons.map(_lessonFromLocal).toList();
   }
 
@@ -108,7 +110,7 @@ class LocalDatabaseService {
     final filtered = lessonId == null
         ? vocabulary
         : vocabulary.where((item) => item.lessonId == lessonId).toList();
-    filtered.sort((a, b) => a.word.compareTo(b.word));
+    filtered.sort((a, b) => (a.word ?? '').compareTo(b.word ?? ''));
     return filtered.map(_vocabularyFromLocal).toList();
   }
 
@@ -185,12 +187,50 @@ class LocalDatabaseService {
     return packages;
   }
 
+  Future<void> saveFlashcardSessionResult(
+    FlashcardSessionResult result,
+  ) async {
+    final existing = await isar.localFlashcardSessionResults
+        .where()
+        .completedAtEqualTo(result.completedAt)
+        .findFirst();
+
+    final local = LocalFlashcardSessionResult()
+      ..id = existing?.id ?? Isar.autoIncrement
+      ..lessonId = result.lessonId
+      ..totalCards = result.totalCards
+      ..learnedCount = result.learnedCount
+      ..notLearnedCount = result.notLearnedCount
+      ..accuracy = result.accuracy
+      ..learnedVocabularyIds = result.learnedVocabularyIds
+      ..notLearnedVocabularyIds = result.notLearnedVocabularyIds
+      ..completedAt = result.completedAt
+      ..synced = result.synced;
+
+    await isar.writeTxn(() async {
+      await isar.localFlashcardSessionResults.put(local);
+    });
+  }
+
+  Future<void> markFlashcardSessionSynced(DateTime completedAt) async {
+    final result = await isar.localFlashcardSessionResults
+        .where()
+        .completedAtEqualTo(completedAt)
+        .findFirst();
+    if (result == null) return;
+
+    await isar.writeTxn(() async {
+      result.synced = true;
+      await isar.localFlashcardSessionResults.put(result);
+    });
+  }
+
   Lesson _lessonFromLocal(LocalLesson local) {
     return Lesson(
       id: local.serverId,
-      title: local.title,
-      category: local.category,
-      description: local.description,
+      title: local.title ?? '',
+      category: local.category ?? '',
+      description: local.description ?? '',
       isOfflineReady: local.isOfflineReady,
       downloadable: local.isOfflineReady,
       version: local.version,
@@ -215,13 +255,13 @@ class LocalDatabaseService {
 
     return Vocabulary(
       id: local.serverId,
-      word: local.word,
-      hiragana: local.hiragana,
-      romaji: local.romaji,
-      meaningVi: local.meaningVi,
+      word: local.word ?? '',
+      hiragana: local.hiragana ?? '',
+      romaji: local.romaji ?? '',
+      meaningVi: local.meaningVi ?? '',
       tags: local.tags,
       examples: examples,
-      lessonId: local.lessonId.isEmpty ? null : local.lessonId,
+      lessonId: (local.lessonId ?? '').isEmpty ? null : local.lessonId,
       updatedAt: local.lastSyncedAt,
     );
   }

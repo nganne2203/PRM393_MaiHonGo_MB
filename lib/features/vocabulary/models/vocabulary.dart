@@ -31,6 +31,8 @@ class Vocabulary {
   final List<VocabularyExample> examples;
   final List<String> tags;
   final String? lessonId;
+  final String audioUrl;
+  final String? audioAssetId;
   final DateTime? updatedAt;
 
   const Vocabulary({
@@ -42,6 +44,8 @@ class Vocabulary {
     required this.examples,
     required this.tags,
     this.lessonId,
+    this.audioUrl = '',
+    this.audioAssetId,
     this.updatedAt,
   });
 
@@ -66,6 +70,8 @@ class Vocabulary {
       tags:
           tags is List ? tags.map((tag) => tag.toString()).toList() : const [],
       lessonId: lessonId ?? json['lessonId']?.toString(),
+      audioUrl: json['audioUrl']?.toString() ?? '',
+      audioAssetId: json['audioAssetId']?.toString(),
       updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? ''),
     );
   }
@@ -82,6 +88,8 @@ class Vocabulary {
       examples: examples,
       tags: tags,
       lessonId: lessonId ?? this.lessonId,
+      audioUrl: audioUrl,
+      audioAssetId: audioAssetId,
       updatedAt: updatedAt,
     );
   }

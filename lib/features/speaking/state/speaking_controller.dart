@@ -1,33 +1,33 @@
 import 'package:flutter/foundation.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:record/record.dart';
 
+import '../../../core/media/audio_player_service.dart';
+import '../../../core/media/recording_service.dart';
 import '../../../core/network/api_client.dart';
 import '../repositories/speaking_repository.dart';
 import 'speaking_state.dart';
 
 class SpeakingController extends ChangeNotifier {
   final SpeakingRepository repository;
-  final AudioRecorder _recorder;
-  final AudioPlayer _player;
+  final RecordingService _recordingService;
+  final AudioPlayerService _audioPlayerService;
 
   SpeakingState _state = const SpeakingState.initial();
 
   SpeakingController({
     SpeakingRepository? repository,
-    AudioRecorder? recorder,
-    AudioPlayer? player,
+    RecordingService? recordingService,
+    AudioPlayerService? audioPlayerService,
   })  : repository = repository ?? SpeakingRepository(),
-        _recorder = recorder ?? AudioRecorder(),
-        _player = player ?? AudioPlayer();
+        _recordingService = recordingService ?? RecordingService(),
+        _audioPlayerService = audioPlayerService ?? AudioPlayerService();
 
   SpeakingState get state => _state;
 
-  Future<void> loadPrompts(String lessonId) async {
+  Future<void> loadPrompts(String lessonId, {String? lessonTitle}) async {
     _setState(_state.copyWith(
       status: SpeakingViewStatus.loading,
+      selectedLessonId: lessonId,
+      selectedLessonName: lessonTitle,
       clearMessage: true,
       clearLatestAttempt: true,
     ));
@@ -38,16 +38,22 @@ class SpeakingController extends ChangeNotifier {
         status: SpeakingViewStatus.ready,
         prompts: prompts,
         selectedIndex: 0,
+        selectedLessonId: lessonId,
+        selectedLessonName:
+            lessonTitle ?? (prompts.isEmpty ? null : prompts.first.lessonTitle),
         message: prompts.isEmpty
-            ? 'No speaking prompts found for this lesson.'
+            ? 'No speaking exercises are available for this lesson yet.'
             : null,
         clearAudioPath: true,
         clearLatestAttempt: true,
       ));
     } catch (error) {
+      final offline = !await repository.isOnline();
       _setState(_state.copyWith(
         status: SpeakingViewStatus.error,
-        message: ApiClient.describeError(error),
+        message: offline
+            ? 'Speaking practice is unavailable offline because this lesson has not been downloaded.'
+            : ApiClient.describeError(error),
       ));
     }
   }
@@ -64,32 +70,26 @@ class SpeakingController extends ChangeNotifier {
   }
 
   Future<void> startRecording() async {
-    final permission = await Permission.microphone.request();
-    if (!permission.isGranted || !await _recorder.hasPermission()) {
+    try {
+      final path = await _recordingService.startRecording();
+      _setState(_state.copyWith(
+        status: SpeakingViewStatus.recording,
+        audioPath: path,
+        clearLatestAttempt: true,
+        clearMessage: true,
+      ));
+    } catch (error) {
       _setState(_state.copyWith(
         status: SpeakingViewStatus.error,
-        message: 'Microphone permission denied.',
+        message: error is RecordingException
+            ? error.message
+            : 'Audio recording failed.',
       ));
-      return;
     }
-
-    final directory = await getTemporaryDirectory();
-    final path =
-        '${directory.path}/speaking-${DateTime.now().microsecondsSinceEpoch}.m4a';
-    await _recorder.start(
-      const RecordConfig(encoder: AudioEncoder.aacLc),
-      path: path,
-    );
-    _setState(_state.copyWith(
-      status: SpeakingViewStatus.recording,
-      audioPath: path,
-      clearLatestAttempt: true,
-      clearMessage: true,
-    ));
   }
 
   Future<void> stopRecording() async {
-    final path = await _recorder.stop();
+    final path = await _recordingService.stopRecording();
     _setState(_state.copyWith(
       status: SpeakingViewStatus.recorded,
       audioPath: path ?? _state.audioPath,
@@ -106,8 +106,7 @@ class SpeakingController extends ChangeNotifier {
       ));
       return;
     }
-    await _player.setFilePath(path);
-    await _player.play();
+    await _audioPlayerService.playLocalFile(path);
   }
 
   Future<void> submitRecording(String lessonId) async {
@@ -169,8 +168,8 @@ class SpeakingController extends ChangeNotifier {
 
   @override
   void dispose() {
-    _recorder.dispose();
-    _player.dispose();
+    _recordingService.dispose();
+    _audioPlayerService.dispose();
     super.dispose();
   }
 }

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/media/audio_cache_service.dart';
+import '../core/media/audio_player_service.dart';
+import '../core/network/api_client.dart';
 import '../core/state/content_state.dart';
+import '../features/bookmarks/repositories/bookmark_repository.dart';
 import '../features/lessons/models/lesson.dart';
 import '../features/vocabulary/models/vocabulary.dart';
 import '../features/vocabulary/state/vocabulary_controller.dart';
@@ -25,20 +29,27 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
   String _filter = 'All';
   final Set<String> _saved = {};
   final _searchController = TextEditingController();
+  final _audioPlayerService = AudioPlayerService();
+  final _audioCacheService = AudioCacheService();
+  final _bookmarkRepository = BookmarkRepository();
 
   @override
   void initState() {
     super.initState();
     Future.microtask(
-      () => ref
-          .read(vocabularyProvider.notifier)
-          .loadVocabulary(lessonId: widget.lesson?.id),
+      () async {
+        await ref
+            .read(vocabularyProvider.notifier)
+            .loadVocabulary(lessonId: widget.lesson?.id);
+        await _loadBookmarks();
+      },
     );
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _audioPlayerService.dispose();
     super.dispose();
   }
 
@@ -225,7 +236,7 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
                                 IconButton(
                                   icon: const Icon(Icons.volume_up_rounded,
                                       color: AppColors.primary, size: 18),
-                                  onPressed: () {},
+                                  onPressed: () => _playAudio(v.audioUrl),
                                 ),
                                 IconButton(
                                   icon: Icon(
@@ -236,9 +247,7 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
                                           ? AppColors.sakura
                                           : AppColors.mute,
                                       size: 18),
-                                  onPressed: () => setState(() => saved
-                                      ? _saved.remove(v.id)
-                                      : _saved.add(v.id)),
+                                  onPressed: () => _toggleBookmark(v.id),
                                 ),
                               ]),
                             );
@@ -259,6 +268,81 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
     final tags = vocabulary.expand((item) => item.tags).toSet().toList()
       ..sort();
     return ['All', ...tags];
+  }
+
+  Future<void> _playAudio(String audioUrl) async {
+    final url = audioUrl.trim();
+    if (url.isEmpty) {
+      _showAudioMessage('Audio is not available yet.');
+      return;
+    }
+
+    try {
+      final cachedPath = await _audioCacheService.cachedPathForUrl(url);
+      if (cachedPath != null) {
+        await _audioPlayerService.playLocalFile(cachedPath);
+        return;
+      }
+      await _audioPlayerService.playUrl(url);
+      await _audioCacheService.cacheRemoteAudio(url);
+    } catch (error) {
+      _showAudioMessage(ApiClient.describeError(error));
+    }
+  }
+
+  void _showAudioMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  Future<void> _loadBookmarks() async {
+    try {
+      final ids = await _bookmarkRepository.getBookmarkedVocabIds();
+      if (!mounted) return;
+      setState(() {
+        _saved
+          ..clear()
+          ..addAll(ids);
+      });
+    } catch (_) {
+      // Keep vocabulary usable even when bookmarks cannot be loaded.
+    }
+  }
+
+  Future<void> _toggleBookmark(String vocabId) async {
+    if (vocabId.isEmpty) {
+      _showAudioMessage('Cannot bookmark this vocabulary item yet.');
+      return;
+    }
+
+    final wasSaved = _saved.contains(vocabId);
+    setState(() {
+      if (wasSaved) {
+        _saved.remove(vocabId);
+      } else {
+        _saved.add(vocabId);
+      }
+    });
+
+    try {
+      if (wasSaved) {
+        await _bookmarkRepository.removeBookmark(vocabId);
+      } else {
+        await _bookmarkRepository.addBookmark(vocabId);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        if (wasSaved) {
+          _saved.add(vocabId);
+        } else {
+          _saved.remove(vocabId);
+        }
+      });
+      _showAudioMessage(ApiClient.describeError(error));
+    }
   }
 }
 

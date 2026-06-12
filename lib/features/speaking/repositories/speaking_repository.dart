@@ -1,6 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 
 import '../../../core/network/api_client.dart';
 import '../data/speaking_local_store.dart';
@@ -25,6 +26,17 @@ class SpeakingRepository {
       queryParameters: lessonId.isEmpty ? null : {'lessonId': lessonId},
     );
     return parsePromptListEnvelope(_asMap(response.data));
+  }
+
+  Future<SpeakingPrompt> getPrompt(String id) async {
+    final response = await apiClient.dio.get('/speaking/prompts/$id');
+    final data = ApiEnvelope.unwrapData(_asMap(response.data));
+    if (data is! Map) {
+      throw const ApiException('Speaking prompt response is invalid.');
+    }
+    return SpeakingPrompt.fromJson(
+      data.map((key, value) => MapEntry(key.toString(), value)),
+    );
   }
 
   Future<SpeakingAttempt> submitAttempt({
@@ -56,8 +68,11 @@ class SpeakingRepository {
     );
   }
 
-  Future<List<SpeakingAttempt>> getAttempts() async {
-    final response = await apiClient.dio.get('/speaking/attempts');
+  Future<List<SpeakingAttempt>> getAttempts({String? lessonId}) async {
+    final path = lessonId == null || lessonId.isEmpty
+        ? '/speaking/attempts'
+        : '/speaking/attempts/$lessonId';
+    final response = await apiClient.dio.get(path);
     final remote = parseAttemptListEnvelope(_asMap(response.data));
     final pending = await localStore.loadPendingAttempts();
     return [
@@ -171,6 +186,9 @@ String _fileName(String path) {
 }
 
 String _audioMimeType(String path) {
+  final detected = lookupMimeType(path);
+  if (detected != null && detected.startsWith('audio/')) return detected;
+
   final lower = path.toLowerCase();
   if (lower.endsWith('.mp3')) return 'audio/mpeg';
   if (lower.endsWith('.wav')) return 'audio/wav';

@@ -8,6 +8,7 @@ void main() {
     const prompt = SpeakingPrompt(
       id: 'prompt-1',
       lessonId: 'lesson-1',
+      lessonTitle: 'JLPT N5 - Greetings',
       promptText: 'Please say this sentence',
       expectedText: 'にほんごをべんきょうします',
       expectedReading: 'nihongo wo benkyo shimasu',

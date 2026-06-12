@@ -11,6 +11,7 @@ void main() {
         {
           '_id': 'prompt-1',
           'lessonId': 'lesson-1',
+          'lessonTitle': 'JLPT N5 - Greetings',
           'promptText': 'Please say this sentence',
           'expectedText': 'これはほんです',
           'expectedReading': 'kore wa hon desu',
@@ -21,6 +22,7 @@ void main() {
     });
 
     expect(prompts, hasLength(1));
+    expect(prompts.first.lessonTitle, 'JLPT N5 - Greetings');
     expect(prompts.first.expectedText, 'これはほんです');
   });
 
