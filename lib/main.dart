@@ -21,6 +21,7 @@ import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
 import 'features/speaking/screens/speaking_practice_screen.dart';
 import 'features/listening/screens/listening_practice_screen.dart';
+import 'features/writing/screens/writing_practice_screen.dart';
 import 'features/offline/screens/offline_downloads_screen.dart';
 
 Future<void> main() async {
@@ -90,15 +91,32 @@ class SakuraApp extends ConsumerWidget {
           final lessonId = ModalRoute.of(c)?.settings.arguments as String?;
           return FlashcardScreen(lessonId: lessonId);
         },
-        '/quiz': (c) => QuizScreen(
-            onDone: (score) =>
-                Navigator.pushReplacementNamed(c, '/result', arguments: score)),
+        '/quiz': (c) {
+          final lessonId = ModalRoute.of(c)?.settings.arguments as String?;
+          return QuizScreen(
+            lessonId: lessonId,
+            onDone: (result) => Navigator.pushReplacementNamed(
+              c,
+              '/result',
+              arguments: result,
+            ),
+          );
+        },
         '/result': (c) {
-          final score = (ModalRoute.of(c)!.settings.arguments as int?) ?? 8;
+          final args = ModalRoute.of(c)!.settings.arguments;
+          final result = args is QuizResultArgs
+              ? args
+              : const QuizResultArgs(score: 8, total: 10);
           return ResultScreen(
-            score: score,
-            total: 10,
-            onRetry: () => _nav(c, '/quiz', replace: true),
+            score: result.score,
+            total: result.total,
+            message: result.message,
+            pendingSync: result.pendingSync,
+            onRetry: () => Navigator.pushReplacementNamed(
+              c,
+              '/quiz',
+              arguments: result.lessonId,
+            ),
             onContinue: () => _nav(c, '/main', replace: true),
           );
         },
@@ -120,6 +138,16 @@ class SakuraApp extends ConsumerWidget {
         '/listening': (c) {
           final lessonId = ModalRoute.of(c)?.settings.arguments as String?;
           return ListeningPracticeScreen(lessonId: lessonId);
+        },
+        '/writing': (c) {
+          final args = ModalRoute.of(c)?.settings.arguments;
+          if (args is WritingPracticeArgs) {
+            return WritingPracticeScreen(
+              lessonId: args.lessonId,
+              lessonTitle: args.lessonTitle,
+            );
+          }
+          return const WritingPracticeScreen();
         },
       },
     );
@@ -194,7 +222,11 @@ class _MainShellState extends State<MainShell> {
           arguments: lessonId,
         ),
         onSeeAllPractice: () => setState(() => _index = 1),
-        onStartQuiz: () => Navigator.pushNamed(context, '/quiz'),
+        onStartQuiz: (lesson) => Navigator.pushNamed(
+          context,
+          '/quiz',
+          arguments: lesson?.lessonId,
+        ),
         onStartSpeaking: (lesson) {
           if (lesson != null && lesson.lessonId.isNotEmpty) {
             Navigator.push(
@@ -215,6 +247,20 @@ class _MainShellState extends State<MainShell> {
           '/listening',
           arguments: lessonId,
         ),
+        onStartWriting: (lesson) {
+          if (lesson != null && lesson.lessonId.isNotEmpty) {
+            Navigator.pushNamed(
+              context,
+              '/writing',
+              arguments: WritingPracticeArgs(
+                lessonId: lesson.lessonId,
+                lessonTitle: lesson.title,
+              ),
+            );
+            return;
+          }
+          Navigator.pushNamed(context, '/writing');
+        },
         onOpenSaved: () => setState(() => _index = 2),
       ),
       CategoriesScreen(

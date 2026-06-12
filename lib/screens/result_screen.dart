@@ -6,12 +6,16 @@ import '../widgets/primary_button.dart';
 
 class ResultScreen extends StatefulWidget {
   final int score, total;
+  final String message;
+  final bool pendingSync;
   final VoidCallback onRetry;
   final VoidCallback onContinue;
   const ResultScreen(
       {super.key,
       required this.score,
       required this.total,
+      this.message = 'Quiz result saved.',
+      this.pendingSync = false,
       required this.onRetry,
       required this.onContinue});
 
@@ -62,6 +66,16 @@ class _ResultScreenState extends State<ResultScreen> {
                     style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.8),
                         fontSize: 13)),
+                const SizedBox(height: 8),
+                Text(
+                  widget.pendingSync ? 'Pending sync' : widget.message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ]),
             ),
           ),
