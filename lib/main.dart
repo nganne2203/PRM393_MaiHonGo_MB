@@ -20,6 +20,7 @@ import 'screens/result_screen.dart';
 import 'screens/saved_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/privacy_security_screen.dart';
 import 'features/speaking/screens/speaking_practice_screen.dart';
 import 'features/listening/screens/listening_practice_screen.dart';
 import 'features/writing/screens/writing_practice_screen.dart';
@@ -129,6 +130,7 @@ class SakuraApp extends ConsumerWidget {
               await ref.read(authControllerProvider.notifier).logout();
               _navFromRoot('/login', clearStack: true);
             }),
+        '/privacy-security': (_) => const PrivacySecurityScreen(),
         '/offline-downloads': (_) => const OfflineDownloadsScreen(),
         '/speaking': (c) {
           final args = ModalRoute.of(c)?.settings.arguments;
