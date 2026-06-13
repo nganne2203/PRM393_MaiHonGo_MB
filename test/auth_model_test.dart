@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maihongo/core/network/api_client.dart';
 import 'package:maihongo/features/auth/models/auth_models.dart';
@@ -30,6 +31,34 @@ void main() {
         'message': 'Email already registered.',
       }),
       throwsA(isA<ApiException>()),
+    );
+  });
+
+  test('ApiClient describes validation errors with field messages', () {
+    final requestOptions = RequestOptions(path: '/auth/register');
+    final error = DioException(
+      requestOptions: requestOptions,
+      response: Response<dynamic>(
+        requestOptions: requestOptions,
+        statusCode: 400,
+        data: {
+          'success': false,
+          'message': 'The request is invalid.',
+          'code': 'BAD_REQUEST',
+          'errors': [
+            {
+              'path': 'body.password',
+              'message': 'Password must include an uppercase letter.',
+            },
+          ],
+        },
+      ),
+      type: DioExceptionType.badResponse,
+    );
+
+    expect(
+      ApiClient.describeError(error),
+      'Password must include an uppercase letter.',
     );
   });
 
