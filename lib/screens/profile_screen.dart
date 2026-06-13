@@ -1,277 +1,641 @@
 import 'package:flutter/material.dart';
-import '../theme/tokens.dart';
-import '../theme/app_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ProfileScreen extends StatelessWidget {
+import '../features/profile/models/profile_summary.dart';
+import '../features/profile/state/profile_provider.dart';
+import '../shared/widgets/app_state_widgets.dart';
+import '../theme/app_theme.dart';
+import '../theme/tokens.dart';
+
+class ProfileScreen extends ConsumerWidget {
   final VoidCallback onSettings;
+
   const ProfileScreen({super.key, required this.onSettings});
 
-  static const _badges = [
-    ('🌸', 'First Step', AppColors.sakuraSoft),
-    ('🔥', '7 Days', AppColors.sakuraSoft),
-    ('🏆', '100 XP', AppColors.goldSoft),
-    ('🎴', 'Card Pro', AppColors.primarySoft),
-    ('⚡', 'Speed', AppColors.skySoft),
-    ('🌟', 'Star', AppColors.goldSoft),
-    ('🧠', 'Brainy', AppColors.matchaSoft),
-    ('🔒', 'Locked', AppColors.inputBg),
-  ];
-
   @override
-  Widget build(BuildContext context) {
-    return ListView(padding: const EdgeInsets.only(bottom: 96), children: [
-      Container(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 48),
-        decoration: const BoxDecoration(
-          gradient: AppGradients.primary,
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: Column(children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Profile',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16)),
-                GestureDetector(
-                  onTap: onSettings,
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.settings_outlined,
-                        color: Colors.white, size: 18),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.3),
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.4), width: 4),
-              ),
-              alignment: Alignment.center,
-              child: const Text('👩‍🎓', style: TextStyle(fontSize: 44)),
-            ),
-            const SizedBox(height: 12),
-            const Text('Mai Tanaka',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 20)),
-            Text('@mai_chan · JLPT N5 Learner',
-                style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500)),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Text('⭐', style: TextStyle(fontSize: 13)),
-                const SizedBox(width: 6),
-                const Text('Level 7',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12)),
-                const SizedBox(width: 6),
-                Text('· 2,480 XP',
-                    style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 11)),
-              ]),
-            ),
-          ]),
-        ),
-      ),
-      Transform.translate(
-        offset: const Offset(0, -28),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              boxShadow: AppShadows.card,
-            ),
-            child: Row(children: [
-              _stat(Icons.local_fire_department_rounded, AppColors.sakura,
-                  AppColors.sakuraSoft, '14', 'Day streak'),
-              _stat(Icons.menu_book_rounded, AppColors.primary,
-                  AppColors.primarySoft, '342', 'Words'),
-              _stat(Icons.emoji_events_rounded, AppColors.matcha,
-                  AppColors.matchaSoft, '18', 'Lessons'),
-            ]),
-          ),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Achievements', style: AppTextStyles.h3),
-          const SizedBox(height: 12),
-          GridView.count(
-            crossAxisCount: 4,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            mainAxisExtent: 96,
-            children: _badges
-                .map((b) => Column(children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                            color: b.$3,
-                            borderRadius: BorderRadius.circular(AppRadius.lg)),
-                        alignment: Alignment.center,
-                        child: Text(b.$1, style: const TextStyle(fontSize: 24)),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(b.$2,
-                          style: const TextStyle(
-                              fontSize: 10, fontWeight: FontWeight.w600)),
-                    ]))
-                .toList(),
-          ),
-          const SizedBox(height: 20),
-          Text('Weekly Goal', style: AppTextStyles.h3),
-          const SizedBox(height: 12),
-          _weeklyGoal(),
-        ]),
-      ),
-    ]);
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(profileSummaryProvider);
 
-  Widget _weeklyGoal() => Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          boxShadow: AppShadows.card,
+    return profile.when(
+      loading: () => const AppLoadingState(message: 'Loading profile...'),
+      error: (error, _) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: AppStatePlaceholder.error(
+          title: 'Profile could not load.',
+          message: error.toString(),
+          onRetry: () => ref.invalidate(profileSummaryProvider),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+      ),
+      data: (summary) => RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(profileSummaryProvider);
+          await ref.read(profileSummaryProvider.future);
+        },
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: 96),
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: AppColors.primarySoft,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                  child: const Icon(
-                    Icons.track_changes_rounded,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  '4 of 7 days complete',
-                  style:
-                      AppTextStyles.body.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-              child: LinearProgressIndicator(
-                value: 4 / 7,
-                minHeight: 8,
-                backgroundColor: AppColors.inputBg,
-                valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+            _Header(summary: summary, onSettings: onSettings),
+            Transform.translate(
+              offset: const Offset(0, -28),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: _StatsCard(summary: summary),
               ),
             ),
-            const SizedBox(height: 18),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                _GoalDay(label: '✓', completed: true),
-                _GoalDay(label: '✓', completed: true),
-                _GoalDay(label: '✓', completed: true),
-                _GoalDay(label: '✓', completed: true),
-                _GoalDay(label: 'F'),
-                _GoalDay(label: 'S'),
-                _GoalDay(label: 'S'),
-              ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SnapshotCard(summary: summary),
+                  const SizedBox(height: 22),
+                  Text('Achievements', style: AppTextStyles.h3),
+                  const SizedBox(height: 12),
+                  _AchievementsGrid(achievements: summary.achievements),
+                  const SizedBox(height: 22),
+                  Text('Weekly Goal', style: AppTextStyles.h3),
+                  const SizedBox(height: 12),
+                  _WeeklyGoal(summary: summary),
+                  const SizedBox(height: 22),
+                  Text('Account', style: AppTextStyles.h3),
+                  const SizedBox(height: 12),
+                  _AccountCard(summary: summary),
+                ],
+              ),
             ),
           ],
         ),
-      );
-
-  Widget _stat(IconData icon, Color fg, Color bg, String value, String label) =>
-      Expanded(
-        child: Column(children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-                color: bg, borderRadius: BorderRadius.circular(AppRadius.sm)),
-            child: Icon(icon, color: fg, size: 18),
-          ),
-          const SizedBox(height: 8),
-          Text(value,
-              style:
-                  const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-          Text(label,
-              style: const TextStyle(
-                  color: AppColors.mute,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500)),
-        ]),
-      );
+      ),
+    );
+  }
 }
 
-class _GoalDay extends StatelessWidget {
-  final String label;
-  final bool completed;
+class _Header extends StatelessWidget {
+  final ProfileSummary summary;
+  final VoidCallback onSettings;
 
-  const _GoalDay({
-    required this.label,
-    this.completed = false,
+  const _Header({
+    required this.summary,
+    required this.onSettings,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: completed ? AppColors.primary : AppColors.inputBg,
-        shape: BoxShape.circle,
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 48),
+      decoration: const BoxDecoration(
+        gradient: AppGradients.primary,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: TextStyle(
-          color: completed ? Colors.white : AppColors.mute,
-          fontWeight: FontWeight.w800,
-          fontSize: 13,
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Profile',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: onSettings,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.settings_outlined,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            _Avatar(summary: summary),
+            const SizedBox(height: 14),
+            Text(
+              summary.displayName,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 22,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${summary.handle} · ${summary.roleLabel}',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.82),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.star_rounded,
+                    color: AppColors.gold,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Level ${summary.level}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '· ${summary.totalXp} XP',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.74),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+class _Avatar extends StatelessWidget {
+  final ProfileSummary summary;
+
+  const _Avatar({required this.summary});
+
+  @override
+  Widget build(BuildContext context) {
+    final avatar = summary.user.avatar;
+
+    return Container(
+      width: 104,
+      height: 104,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.3),
+        shape: BoxShape.circle,
+        border:
+            Border.all(color: Colors.white.withValues(alpha: 0.4), width: 4),
+      ),
+      clipBehavior: Clip.antiAlias,
+      alignment: Alignment.center,
+      child: avatar == null || avatar.isEmpty
+          ? Text(
+              _initials(summary.displayName),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 34,
+                fontWeight: FontWeight.w900,
+              ),
+            )
+          : Image.network(
+              avatar,
+              width: 104,
+              height: 104,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Text(
+                _initials(summary.displayName),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 34,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+    );
+  }
+}
+
+class _StatsCard extends StatelessWidget {
+  final ProfileSummary summary;
+
+  const _StatsCard({required this.summary});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
+      ),
+      child: Row(
+        children: [
+          _stat(
+            Icons.local_fire_department_rounded,
+            AppColors.sakura,
+            AppColors.sakuraSoft,
+            summary.streakDays.toString(),
+            'Day streak',
+          ),
+          _stat(
+            Icons.menu_book_rounded,
+            AppColors.primary,
+            AppColors.primarySoft,
+            summary.learnedWords.toString(),
+            'Words',
+          ),
+          _stat(
+            Icons.emoji_events_rounded,
+            AppColors.matcha,
+            AppColors.matchaSoft,
+            summary.completedLessons.toString(),
+            'Lessons',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _stat(IconData icon, Color fg, Color bg, String value, String label) {
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Icon(icon, color: fg, size: 20),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.mute,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SnapshotCard extends StatelessWidget {
+  final ProfileSummary summary;
+
+  const _SnapshotCard({required this.summary});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Learning Snapshot',
+            style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _miniStat('Saved', summary.savedWords.toString()),
+              _miniStat('Offline', summary.downloadedLessons.toString()),
+              _miniStat('Vocabulary', summary.totalVocabulary.toString()),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(Icons.access_time_rounded,
+                  size: 16, color: AppColors.mute),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  _lastActivityLabel(summary.lastActivityAt),
+                  style: AppTextStyles.caption,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStat(String label, String value) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.inputBg,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: AppTextStyles.h3,
+            ),
+            Text(label, style: AppTextStyles.caption),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AchievementsGrid extends StatelessWidget {
+  final List<ProfileAchievement> achievements;
+
+  const _AchievementsGrid({required this.achievements});
+
+  static const _colors = [
+    AppColors.sakuraSoft,
+    AppColors.sakuraSoft,
+    AppColors.goldSoft,
+    AppColors.primarySoft,
+    AppColors.skySoft,
+    AppColors.goldSoft,
+    AppColors.matchaSoft,
+    AppColors.inputBg,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      itemCount: achievements.length,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        mainAxisExtent: 112,
+      ),
+      itemBuilder: (context, index) {
+        final achievement = achievements[index];
+        final unlocked = achievement.unlocked;
+        return Opacity(
+          opacity: unlocked ? 1 : 0.56,
+          child: Column(
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: _colors[index % _colors.length],
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+                alignment: Alignment.center,
+                child: unlocked
+                    ? Text(
+                        achievement.icon,
+                        style: const TextStyle(
+                          color: AppColors.ink,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                        ),
+                      )
+                    : const Icon(Icons.lock_rounded, color: AppColors.mute),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                achievement.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style:
+                    const TextStyle(fontSize: 10, fontWeight: FontWeight.w800),
+              ),
+              Text(
+                '${achievement.current.clamp(0, achievement.target)}/${achievement.target}',
+                style: const TextStyle(
+                  color: AppColors.mute,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _WeeklyGoal extends StatelessWidget {
+  final ProfileSummary summary;
+
+  const _WeeklyGoal({required this.summary});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: AppColors.primarySoft,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                child: const Icon(
+                  Icons.track_changes_rounded,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '${summary.weeklyCompletedDays} of ${summary.weeklyGoalDays} days complete',
+                  style:
+                      AppTextStyles.body.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            child: LinearProgressIndicator(
+              value: summary.weeklyProgress,
+              minHeight: 8,
+              backgroundColor: AppColors.inputBg,
+              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(7, (index) {
+              final completed = index < summary.weeklyCompletedDays;
+              return _GoalDay(
+                label: _weekdayLabel(index),
+                completed: completed,
+                muted: index >= summary.weeklyGoalDays,
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountCard extends StatelessWidget {
+  final ProfileSummary summary;
+
+  const _AccountCard({required this.summary});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Column(
+        children: [
+          _accountRow(Icons.mail_outline_rounded, 'Email', summary.user.email),
+          const Divider(height: 20),
+          _accountRow(Icons.login_rounded, 'Sign-in', summary.providerLabel),
+          const Divider(height: 20),
+          _accountRow(
+            summary.user.emailVerified
+                ? Icons.verified_rounded
+                : Icons.info_outline_rounded,
+            'Email status',
+            summary.user.emailVerified ? 'Verified' : 'Not verified',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _accountRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.primary, size: 18),
+        const SizedBox(width: 10),
+        Text(label, style: AppTextStyles.caption),
+        const Spacer(),
+        Flexible(
+          child: Text(
+            value.isEmpty ? 'Not available' : value,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+            style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GoalDay extends StatelessWidget {
+  final String label;
+  final bool completed;
+  final bool muted;
+
+  const _GoalDay({
+    required this.label,
+    this.completed = false,
+    this.muted = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = completed
+        ? AppColors.primary
+        : muted
+            ? AppColors.line
+            : AppColors.inputBg;
+    final fg = completed ? Colors.white : AppColors.mute;
+
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+      alignment: Alignment.center,
+      child: Text(
+        completed ? '✓' : label,
+        style: TextStyle(
+          color: fg,
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+String _initials(String value) {
+  final parts = value
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) return 'L';
+  if (parts.length == 1) return parts.first[0].toUpperCase();
+  return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+}
+
+String _weekdayLabel(int index) {
+  const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  return labels[index.clamp(0, labels.length - 1)];
+}
+
+String _lastActivityLabel(DateTime? value) {
+  if (value == null) return 'No learning activity recorded yet.';
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final date = DateTime(value.year, value.month, value.day);
+  final days = today.difference(date).inDays;
+  if (days <= 0) return 'Last activity today.';
+  if (days == 1) return 'Last activity yesterday.';
+  return 'Last activity $days days ago.';
 }

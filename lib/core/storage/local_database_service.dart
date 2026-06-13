@@ -301,6 +301,12 @@ class LocalDatabaseService {
     });
   }
 
+  Future<List<LocalFlashcardSessionResult>> getFlashcardSessionResults() async {
+    final results = await isar.localFlashcardSessionResults.where().findAll();
+    results.sort((a, b) => b.completedAt.compareTo(a.completedAt));
+    return results;
+  }
+
   Lesson _lessonFromLocal(LocalLesson local) {
     return Lesson(
       id: local.serverId,

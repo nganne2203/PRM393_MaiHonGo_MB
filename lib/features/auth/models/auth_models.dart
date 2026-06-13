@@ -8,6 +8,8 @@ class UserModel {
   final String provider;
   final String? avatar;
   final bool emailVerified;
+  final DateTime? lastLoginAt;
+  final DateTime? createdAt;
 
   const UserModel({
     required this.id,
@@ -17,6 +19,8 @@ class UserModel {
     required this.provider,
     this.avatar,
     required this.emailVerified,
+    this.lastLoginAt,
+    this.createdAt,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -30,6 +34,8 @@ class UserModel {
       provider: json['provider']?.toString() ?? 'local',
       avatar: json['avatar']?.toString(),
       emailVerified: json['emailVerified'] == true,
+      lastLoginAt: DateTime.tryParse(json['lastLoginAt']?.toString() ?? ''),
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? ''),
     );
   }
 }
