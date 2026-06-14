@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
-import '../../../theme/app_theme.dart';
+import '../../../core/localization/app_localizations.dart';
+import '../../../theme/app_palette.dart';
 import '../../../theme/tokens.dart';
 import '../../../widgets/primary_button.dart';
 import '../../lessons/models/lesson.dart';
@@ -151,9 +152,13 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
     final prompt = _currentPrompt;
     final lessonId = _selectedLessonId;
     final answer = _answerController.text.trim();
+    final emptyAnswerMessage = context.tr('Write an answer before submitting.');
+    final savedOfflineMessage =
+        context.tr('Saved offline. It will sync when you reconnect.');
+    final savedMessage = context.tr('Writing answer saved.');
     if (prompt == null || lessonId == null || lessonId.isEmpty) return;
     if (answer.isEmpty) {
-      setState(() => _message = 'Write an answer before submitting.');
+      setState(() => _message = emptyAnswerMessage);
       return;
     }
 
@@ -178,9 +183,7 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
       }
       setState(() {
         _lastSubmission = submission;
-        _message = submission.pendingSync
-            ? 'Saved offline. It will sync when you reconnect.'
-            : 'Writing answer saved.';
+        _message = submission.pendingSync ? savedOfflineMessage : savedMessage;
       });
     } catch (error) {
       setState(() => _message = ApiClient.describeError(error));
@@ -234,29 +237,29 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
   Widget build(BuildContext context) {
     final title = _selectedLessonTitle?.isNotEmpty == true
         ? _selectedLessonTitle!
-        : 'Select a lesson';
+        : context.tr('Select a lesson');
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        foregroundColor: AppColors.ink,
+        foregroundColor: context.colors.ink,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Writing Practice'),
+            Text(context.tr('Writing Practice')),
             Text(
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.caption.copyWith(color: AppColors.mute),
+              style: context.captionText,
             ),
           ],
         ),
         actions: [
           IconButton(
-            tooltip: 'History',
+            tooltip: context.tr('History'),
             onPressed: _openHistory,
             icon: const Icon(Icons.history_rounded),
           ),
@@ -284,24 +287,27 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.line),
+        border: Border.all(color: context.colors.line),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: _selectedLessonId,
           isExpanded: true,
           hint: Text(
-            _loadingLessons ? 'Loading lessons...' : 'Select Lesson',
-            style: AppTextStyles.body.copyWith(color: AppColors.mute),
+            context
+                .tr(_loadingLessons ? 'Loading lessons...' : 'Select Lesson'),
+            style: context.bodyText.copyWith(color: context.colors.mute),
           ),
           items: _lessons
               .map(
                 (lesson) => DropdownMenuItem(
                   value: lesson.id,
                   child: Text(
-                    lesson.title.isEmpty ? 'Untitled lesson' : lesson.title,
+                    lesson.title.isEmpty
+                        ? context.tr('Untitled lesson')
+                        : lesson.title,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -324,14 +330,14 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
     if (_selectedLessonId == null || _selectedLessonId!.isEmpty) {
       return _emptyState(
         Icons.edit_note_rounded,
-        'Select a lesson to start writing practice.',
+        context.tr('Select a lesson to start writing practice.'),
       );
     }
 
     if (_prompts.isEmpty) {
       return _emptyState(
         Icons.inbox_rounded,
-        'No writing exercises are available for this lesson yet.',
+        context.tr('No writing exercises are available for this lesson yet.'),
       );
     }
 
@@ -341,13 +347,13 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
       children: [
         Text(
           '${_index + 1} / ${_prompts.length}',
-          style: AppTextStyles.overline,
+          style: context.overlineText,
         ),
         const SizedBox(height: 8),
         LinearProgressIndicator(
           value: (_index + 1) / _prompts.length,
           minHeight: 8,
-          backgroundColor: AppColors.line,
+          backgroundColor: context.colors.line,
           valueColor: const AlwaysStoppedAnimation(AppColors.primary),
           borderRadius: BorderRadius.circular(999),
         ),
@@ -355,23 +361,23 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.colors.surface,
             borderRadius: BorderRadius.circular(AppRadius.xl),
             boxShadow: AppShadows.card,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_promptTypeLabel(prompt.promptType),
-                  style: AppTextStyles.overline),
+              Text(context.tr(_promptTypeLabel(prompt.promptType)),
+                  style: context.overlineText),
               const SizedBox(height: 10),
               Text(
                 prompt.promptText,
-                style: AppTextStyles.h2.copyWith(fontSize: 22),
+                style: context.h2.copyWith(fontSize: 22),
               ),
               if (prompt.rubric.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Text(prompt.rubric, style: AppTextStyles.caption),
+                Text(prompt.rubric, style: context.captionText),
               ],
             ],
           ),
@@ -383,16 +389,16 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
           minLines: 5,
           textInputAction: TextInputAction.newline,
           decoration: InputDecoration(
-            hintText: 'Write your answer',
+            hintText: context.tr('Write your answer'),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: context.colors.surface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.lg),
-              borderSide: const BorderSide(color: AppColors.line),
+              borderSide: BorderSide(color: context.colors.line),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.lg),
-              borderSide: const BorderSide(color: AppColors.line),
+              borderSide: BorderSide(color: context.colors.line),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -404,13 +410,13 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
         if (_lastSubmission != null) _feedbackCard(_lastSubmission!, prompt),
         const SizedBox(height: 16),
         PrimaryButton(
-          label: _submitting ? 'Saving...' : 'Submit Answer',
+          label: context.tr(_submitting ? 'Saving...' : 'Submit Answer'),
           trailingIcon: Icons.check_rounded,
           onTap: _submitting ? () {} : _submit,
         ),
         if (_index < _prompts.length - 1) ...[
           const SizedBox(height: 12),
-          GhostButton(label: 'Next prompt', onTap: _nextPrompt),
+          GhostButton(label: context.tr('Next prompt'), onTap: _nextPrompt),
         ],
       ],
     );
@@ -430,21 +436,21 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            submission.pendingSync ? 'Pending sync' : 'Feedback',
-            style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w800),
+            context.tr(submission.pendingSync ? 'Pending sync' : 'Feedback'),
+            style: context.bodyText.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Text(
             submission.feedback.isEmpty
-                ? 'Your answer has been submitted for review.'
+                ? context.tr('Your answer has been submitted for review.')
                 : submission.feedback,
-            style: AppTextStyles.caption.copyWith(color: AppColors.ink),
+            style: context.captionText.copyWith(color: context.colors.ink),
           ),
           if (sample.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text('Sample answer', style: AppTextStyles.overline),
+            Text(context.tr('Sample answer'), style: context.overlineText),
             const SizedBox(height: 4),
-            Text(sample, style: AppTextStyles.caption),
+            Text(sample, style: context.captionText),
           ],
         ],
       ),
@@ -455,7 +461,7 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         boxShadow: AppShadows.card,
       ),
@@ -464,9 +470,9 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
           Icon(icon, color: AppColors.primary, size: 40),
           const SizedBox(height: 12),
           Text(
-            text,
+            context.tr(text),
             textAlign: TextAlign.center,
-            style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700),
+            style: context.bodyText.copyWith(fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -480,7 +486,7 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
         color: AppColors.goldSoft,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
-      child: Text(message, style: AppTextStyles.caption),
+      child: Text(context.tr(message), style: context.captionText),
     );
   }
 

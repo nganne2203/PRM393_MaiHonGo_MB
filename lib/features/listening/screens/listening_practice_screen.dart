@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../theme/app_theme.dart';
+import '../../../core/localization/app_localizations.dart';
+import '../../../theme/app_palette.dart';
 import '../../../theme/tokens.dart';
 import '../state/listening_controller.dart';
 import '../state/listening_state.dart';
@@ -51,11 +52,11 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        title: const Text('Listening Practice'),
+        title: Text(context.tr('Listening Practice')),
       ),
       body: SafeArea(
         child: AnimatedBuilder(
@@ -80,7 +81,7 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
@@ -89,15 +90,15 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
           Expanded(
             child: TextField(
               controller: _lessonController,
-              decoration: const InputDecoration(
-                labelText: 'Lesson ID',
-                hintText: 'Paste a backend lesson id',
+              decoration: InputDecoration(
+                labelText: context.tr('Lesson ID'),
+                hintText: context.tr('Paste a backend lesson id'),
               ),
             ),
           ),
           const SizedBox(width: 10),
           IconButton.filled(
-            tooltip: 'Load exercises',
+            tooltip: context.tr('Load exercises'),
             onPressed: () =>
                 _controller.loadExercises(_lessonController.text.trim()),
             icon: const Icon(Icons.search_rounded),
@@ -136,7 +137,9 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Exercise ${state.selectedIndex + 1} of ${state.exercises.length}',
+            context.l10n.isVietnamese
+                ? 'Bài ${state.selectedIndex + 1} / ${state.exercises.length}'
+                : 'Exercise ${state.selectedIndex + 1} of ${state.exercises.length}',
             style: const TextStyle(
               color: Colors.white70,
               fontSize: 12,
@@ -145,7 +148,9 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
           ),
           const SizedBox(height: 10),
           Text(
-            exercise.title.isEmpty ? 'Listen and choose' : exercise.title,
+            exercise.title.isEmpty
+                ? context.tr('Listen and choose')
+                : exercise.title,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -155,7 +160,7 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
           const SizedBox(height: 8),
           Text(
             exercise.instruction.isEmpty
-                ? 'Play the audio, then select the matching answer.'
+                ? context.tr('Play the audio, then select the matching answer.')
                 : exercise.instruction,
             style: const TextStyle(color: Colors.white70, fontSize: 13),
           ),
@@ -167,7 +172,7 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
             ),
             onPressed: _controller.playCurrentAudio,
             icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('Play audio'),
+            label: Text(context.tr('Play audio')),
           ),
           const SizedBox(height: 18),
           Row(
@@ -181,7 +186,7 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
                     ? null
                     : () => _controller.selectExercise(state.selectedIndex - 1),
                 icon: const Icon(Icons.chevron_left_rounded),
-                label: const Text('Previous'),
+                label: Text(context.tr('Previous')),
               ),
               const Spacer(),
               OutlinedButton.icon(
@@ -193,7 +198,7 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
                     ? null
                     : () => _controller.selectExercise(state.selectedIndex + 1),
                 icon: const Icon(Icons.chevron_right_rounded),
-                label: const Text('Next'),
+                label: Text(context.tr('Next')),
               ),
             ],
           ),
@@ -210,14 +215,14 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(exercise.questionText, style: AppTextStyles.h3),
+          Text(exercise.questionText, style: context.h3),
           const SizedBox(height: 14),
           for (final choice in exercise.choices) ...[
             _choiceTile(choice, state),
@@ -235,7 +240,8 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.check_rounded),
-            label: Text(isSubmitting ? 'Submitting' : 'Submit answer'),
+            label:
+                Text(context.tr(isSubmitting ? 'Submitting' : 'Submit answer')),
           ),
           if (attempt != null) ...[
             const SizedBox(height: 14),
@@ -254,10 +260,10 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primarySoft : AppColors.bg,
+          color: selected ? AppColors.primarySoft : context.colors.input,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: selected ? AppColors.primary : AppColors.line,
+            color: selected ? AppColors.primary : context.colors.line,
           ),
         ),
         child: Row(
@@ -266,11 +272,11 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
               selected
                   ? Icons.radio_button_checked_rounded
                   : Icons.radio_button_off_rounded,
-              color: selected ? AppColors.primary : AppColors.mute,
+              color: selected ? AppColors.primary : context.colors.mute,
               size: 18,
             ),
             const SizedBox(width: 10),
-            Expanded(child: Text(choice, style: AppTextStyles.body)),
+            Expanded(child: Text(choice, style: context.bodyText)),
           ],
         ),
       ),
@@ -287,7 +293,7 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
       ),
       child: Text(
         [
-          isCorrect ? 'Correct.' : 'Not quite.',
+          context.tr(isCorrect ? 'Correct.' : 'Not quite.'),
           if (explanation.isNotEmpty) explanation,
         ].join(' '),
         style: TextStyle(
@@ -311,7 +317,7 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
       child: Text(
         state.message!,
         style: TextStyle(
-          color: isError ? AppColors.sakura : AppColors.ink,
+          color: isError ? AppColors.sakura : context.colors.ink,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -321,13 +327,13 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
   Widget _emptyCard() => Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           boxShadow: AppShadows.card,
         ),
         child: Text(
-          'Load a lesson to begin listening practice.',
-          style: AppTextStyles.body,
+          context.tr('Load a lesson to begin listening practice.'),
+          style: context.bodyText,
         ),
       );
 }

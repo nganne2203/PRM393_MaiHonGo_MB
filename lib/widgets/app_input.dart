@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_palette.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 
@@ -29,18 +30,21 @@ class _AppInputState extends State<AppInput> {
     return TextField(
       controller: widget.controller,
       obscureText: _hide,
-      style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w500),
+      style: AppTextStyles.body.copyWith(
+        color: context.colors.ink,
+        fontWeight: FontWeight.w500,
+      ),
       decoration: InputDecoration(
         hintText: widget.hint,
-        hintStyle: AppTextStyles.body.copyWith(color: const Color(0xFFB5B6C9)),
-        prefixIcon: Icon(widget.icon, color: AppColors.mute, size: 18),
+        hintStyle: AppTextStyles.body.copyWith(color: context.colors.mute),
+        prefixIcon: Icon(widget.icon, color: context.colors.mute, size: 18),
         suffixIcon: widget.obscure
             ? IconButton(
                 icon: Icon(
                     _hide
                         ? Icons.visibility_off_outlined
                         : Icons.visibility_outlined,
-                    color: AppColors.mute,
+                    color: context.colors.mute,
                     size: 18),
                 onPressed: () => setState(() => _hide = !_hide),
               )

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'tokens.dart';
+import 'app_palette.dart';
 
 class AppTextStyles {
   static const TextStyle h1 = TextStyle(
@@ -36,27 +37,59 @@ class AppTextStyles {
 
 class AppTheme {
   static ThemeData light() {
-    return ThemeData(
-      useMaterial3: true,
+    return _base(
       brightness: Brightness.light,
+      palette: AppPalette.light,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
         brightness: Brightness.light,
         primary: AppColors.primary,
         surface: AppColors.surface,
       ),
-      scaffoldBackgroundColor: AppColors.bg,
-      canvasColor: AppColors.bg,
-      cardColor: Colors.white,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.bg,
-        foregroundColor: AppColors.ink,
+    );
+  }
+
+  static ThemeData dark() {
+    return _base(
+      brightness: Brightness.dark,
+      palette: AppPalette.dark,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColors.primaryLight,
+        brightness: Brightness.dark,
+        primary: AppColors.primaryLight,
+        surface: AppPalette.dark.surface,
+      ),
+    );
+  }
+
+  static ThemeData _base({
+    required Brightness brightness,
+    required AppPalette palette,
+    required ColorScheme colorScheme,
+  }) {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: brightness,
+      colorScheme: colorScheme,
+      extensions: [palette],
+      scaffoldBackgroundColor: palette.bg,
+      canvasColor: palette.bg,
+      cardColor: palette.surface,
+      dividerColor: palette.line,
+      appBarTheme: AppBarTheme(
+        backgroundColor: palette.bg,
+        foregroundColor: palette.ink,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
       ),
+      textTheme: ThemeData(brightness: brightness).textTheme.apply(
+            bodyColor: palette.ink,
+            displayColor: palette.ink,
+          ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.inputBg,
+        fillColor: palette.input,
+        hintStyle: TextStyle(color: palette.mute),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(

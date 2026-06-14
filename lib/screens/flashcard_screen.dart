@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/localization/app_localizations.dart';
 import '../core/network/api_client.dart';
 import '../core/state/content_state.dart';
 import '../features/bookmarks/repositories/bookmark_repository.dart';
@@ -8,7 +9,8 @@ import '../features/flashcards/repositories/flashcard_session_repository.dart';
 import '../features/flashcards/screens/flashcard_summary_screen.dart';
 import '../features/vocabulary/models/vocabulary.dart';
 import '../features/vocabulary/state/vocabulary_controller.dart';
-import '../theme/app_theme.dart';
+import '../shared/widgets/app_state_widgets.dart';
+import '../theme/app_palette.dart';
 import '../theme/tokens.dart';
 import '../widgets/flashcard.dart';
 
@@ -63,7 +65,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
     final totalCards = session?.totalCards ?? cards.length;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -79,7 +81,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                       child: LinearProgressIndicator(
                         value: totalCards == 0 ? 0 : answeredCards / totalCards,
                         minHeight: 8,
-                        backgroundColor: AppColors.line,
+                        backgroundColor: context.colors.line,
                         valueColor:
                             const AlwaysStoppedAnimation(AppColors.primary),
                       ),
@@ -89,8 +91,8 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                         totalCards == 0
                             ? '0 / 0'
                             : '$answeredCards / $totalCards',
-                        style: const TextStyle(
-                            color: AppColors.mute,
+                        style: TextStyle(
+                            color: context.colors.mute,
                             fontSize: 11,
                             fontWeight: FontWeight.w600)),
                   ],
@@ -104,21 +106,32 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                     isSaved
                         ? Icons.bookmark_rounded
                         : Icons.bookmark_border_rounded,
-                    color: isSaved ? AppColors.sakura : AppColors.mute),
+                    color: isSaved ? AppColors.sakura : context.colors.mute),
               ),
             ]),
             const SizedBox(height: 16),
             Expanded(
               child: Center(
                 child: isLoading && cards.isEmpty && widget.initialCards == null
-                    ? const CircularProgressIndicator()
+                    ? AppLoadingState(
+                        message: context.tr('Loading flashcards...'))
                     : cards.isEmpty
-                        ? _EmptyFlashcards(
-                            isOffline: isOffline || hasError,
-                            message: state.message,
-                            onRetry: () =>
-                                ref.read(vocabularyProvider.notifier).retry(),
-                          )
+                        ? (isOffline || hasError
+                            ? AppStatePlaceholder.offline(
+                                title:
+                                    context.tr('Lesson not available offline'),
+                                message: state.message,
+                                onRetry: () => ref
+                                    .read(vocabularyProvider.notifier)
+                                    .retry(),
+                              )
+                            : AppStatePlaceholder.empty(
+                                icon: Icons.style_outlined,
+                                title: context.tr('No flashcards found.'),
+                                onRetry: () => ref
+                                    .read(vocabularyProvider.notifier)
+                                    .retry(),
+                              ))
                         : FlipFlashcard(
                             key: ValueKey(currentCard?.id),
                             kanji: currentCard?.word ?? '',
@@ -261,7 +274,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
 
   Future<void> _toggleBookmark(Vocabulary vocabulary) async {
     if (vocabulary.id.isEmpty) {
-      _showMessage('Cannot bookmark this vocabulary item yet.');
+      _showMessage(context.tr('Cannot bookmark this vocabulary item yet.'));
       return;
     }
 
@@ -297,36 +310,6 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
-    );
-  }
-}
-
-class _EmptyFlashcards extends StatelessWidget {
-  final bool isOffline;
-  final String? message;
-  final VoidCallback onRetry;
-
-  const _EmptyFlashcards({
-    required this.isOffline,
-    required this.message,
-    required this.onRetry,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          isOffline
-              ? 'Lesson not available offline'
-              : message ?? 'No flashcards found.',
-          style: AppTextStyles.caption,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        TextButton(onPressed: onRetry, child: const Text('Retry')),
-      ],
     );
   }
 }

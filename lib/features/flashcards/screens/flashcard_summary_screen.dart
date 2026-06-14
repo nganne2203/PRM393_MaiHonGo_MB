@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../screens/flashcard_screen.dart';
+import '../../../theme/app_palette.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../../vocabulary/models/vocabulary.dart';
@@ -21,25 +23,27 @@ class FlashcardSummaryScreen extends StatelessWidget {
     final hasReviewCards = result.notLearnedCards.isNotEmpty;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Session Complete'),
-        backgroundColor: AppColors.bg,
+        title: Text(context.tr('Session Complete')),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
       ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
           children: [
-            _scoreCard(),
+            _scoreCard(context),
             const SizedBox(height: 16),
             _wordSection(
+              context: context,
               title: 'Learned',
               color: AppColors.matcha,
               words: result.learnedCards,
             ),
             const SizedBox(height: 12),
             _wordSection(
+              context: context,
               title: 'Need Review',
               color: AppColors.sakura,
               words: result.notLearnedCards,
@@ -57,10 +61,11 @@ class FlashcardSummaryScreen extends StatelessWidget {
                   ),
                 ),
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Review Not Learned'),
+                label: Text(context.tr('Review Not Learned')),
               )
             else
-              _messageCard('Great job! No words need review.'),
+              _messageCard(
+                  context, context.tr('Great job! No words need review.')),
             const SizedBox(height: 10),
             OutlinedButton.icon(
               onPressed: () => Navigator.pushReplacement(
@@ -73,14 +78,14 @@ class FlashcardSummaryScreen extends StatelessWidget {
                 ),
               ),
               icon: const Icon(Icons.restart_alt_rounded),
-              label: const Text('Restart All'),
+              label: Text(context.tr('Restart All')),
             ),
             const SizedBox(height: 10),
             TextButton.icon(
               onPressed: () =>
                   Navigator.popUntil(context, (route) => route.isFirst),
               icon: const Icon(Icons.home_rounded),
-              label: const Text('Back to Home'),
+              label: Text(context.tr('Back to Home')),
             ),
           ],
         ),
@@ -88,7 +93,7 @@ class FlashcardSummaryScreen extends StatelessWidget {
     );
   }
 
-  Widget _scoreCard() {
+  Widget _scoreCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -99,8 +104,8 @@ class FlashcardSummaryScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Session Complete',
+          Text(
+            context.tr('Session Complete'),
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w900,
@@ -110,10 +115,10 @@ class FlashcardSummaryScreen extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              _stat('Total', '${result.totalCards}'),
-              _stat('Learned', '${result.learnedCount}'),
-              _stat('Need Review', '${result.notLearnedCount}'),
-              _stat('Accuracy', '${result.accuracy}%'),
+              _stat(context, 'Total', '${result.totalCards}'),
+              _stat(context, 'Learned', '${result.learnedCount}'),
+              _stat(context, 'Need Review', '${result.notLearnedCount}'),
+              _stat(context, 'Accuracy', '${result.accuracy}%'),
             ],
           ),
         ],
@@ -121,12 +126,12 @@ class FlashcardSummaryScreen extends StatelessWidget {
     );
   }
 
-  Widget _stat(String label, String value) => Expanded(
+  Widget _stat(BuildContext context, String label, String value) => Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              label,
+              context.tr(label),
               style: const TextStyle(color: Colors.white70, fontSize: 11),
             ),
             const SizedBox(height: 4),
@@ -143,6 +148,7 @@ class FlashcardSummaryScreen extends StatelessWidget {
       );
 
   Widget _wordSection({
+    required BuildContext context,
     required String title,
     required Color color,
     required List<Vocabulary> words,
@@ -150,7 +156,7 @@ class FlashcardSummaryScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
@@ -158,12 +164,13 @@ class FlashcardSummaryScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '$title (${words.length})',
+            '${context.tr(title)} (${words.length})',
             style: AppTextStyles.h3.copyWith(color: color),
           ),
           const SizedBox(height: 10),
           if (words.isEmpty)
-            Text('No words in this group.', style: AppTextStyles.caption)
+            Text(context.tr('No words in this group.'),
+                style: context.captionText)
           else
             for (final word in words) ...[
               Row(
@@ -173,7 +180,7 @@ class FlashcardSummaryScreen extends StatelessWidget {
                   Expanded(
                     child: Text(
                       '${word.hiragana} · ${word.meaningVi}',
-                      style: AppTextStyles.caption,
+                      style: context.captionText,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -186,7 +193,7 @@ class FlashcardSummaryScreen extends StatelessWidget {
     );
   }
 
-  Widget _messageCard(String message) => Container(
+  Widget _messageCard(BuildContext context, String message) => Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: AppColors.matchaSoft,

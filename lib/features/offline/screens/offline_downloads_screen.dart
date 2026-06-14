@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/state/content_state.dart';
 import '../../../screens/flashcard_screen.dart';
-import '../../../theme/app_theme.dart';
+import '../../../theme/app_palette.dart';
 import '../../../theme/tokens.dart';
 import '../../lessons/state/lesson_controller.dart';
 import '../repositories/offline_repository.dart';
@@ -20,7 +21,7 @@ class OfflineDownloadsScreen extends ConsumerWidget {
         offlineState.downloadedLessons.map((item) => item.lesson.id).toSet();
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -33,7 +34,7 @@ class OfflineDownloadsScreen extends ConsumerWidget {
               Row(
                 children: [
                   const BackButton(),
-                  Text('Offline Downloads', style: AppTextStyles.h2),
+                  Text(context.tr('Offline Downloads'), style: context.h2),
                 ],
               ),
               const SizedBox(height: 16),
@@ -44,14 +45,14 @@ class OfflineDownloadsScreen extends ConsumerWidget {
                       : AppColors.matcha,
                   text: offlineState.message!,
                 ),
-              Text('DOWNLOADED', style: AppTextStyles.overline),
+              Text(context.tr('DOWNLOADED'), style: context.overlineText),
               const SizedBox(height: 8),
               if (offlineState.status == ContentStatus.loading &&
                   offlineState.downloadedLessons.isEmpty)
                 const Center(child: CircularProgressIndicator())
               else if (offlineState.downloadedLessons.isEmpty)
                 _EmptyPanel(
-                  text: 'No downloaded lessons yet.',
+                  text: context.tr('No downloaded lessons yet.'),
                   icon: Icons.download_done_rounded,
                 )
               else
@@ -73,19 +74,19 @@ class OfflineDownloadsScreen extends ConsumerWidget {
                   ),
                 ),
               const SizedBox(height: 20),
-              Text('AVAILABLE', style: AppTextStyles.overline),
+              Text(context.tr('AVAILABLE'), style: context.overlineText),
               const SizedBox(height: 8),
               if (lessonState.status == ContentStatus.loading &&
                   lessonState.lessons.isEmpty)
                 const Center(child: CircularProgressIndicator())
               else if (lessonState.lessons.isEmpty)
                 _EmptyPanel(
-                  text: 'No lessons available to download.',
+                  text: context.tr('No lessons available to download.'),
                   icon: Icons.cloud_off_rounded,
                   action: TextButton(
                     onPressed: () =>
                         ref.read(lessonProvider.notifier).loadLessons(),
-                    child: const Text('Retry'),
+                    child: Text(context.tr('Retry')),
                   ),
                 )
               else
@@ -132,7 +133,7 @@ class _DownloadedCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
@@ -150,13 +151,13 @@ class _DownloadedCard extends StatelessWidget {
               children: [
                 Text(
                   item.lesson.title,
-                  style: AppTextStyles.body.copyWith(
+                  style: context.bodyText.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 Text(
                   '${_formatBytes(item.size)} · ${_formatDate(item.downloadedAt)}',
-                  style: AppTextStyles.caption,
+                  style: context.captionText,
                 ),
               ],
             ),
@@ -204,7 +205,7 @@ class _AvailableCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
@@ -221,12 +222,12 @@ class _AvailableCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
-                    style: AppTextStyles.body
-                        .copyWith(fontWeight: FontWeight.w700)),
+                    style:
+                        context.bodyText.copyWith(fontWeight: FontWeight.w700)),
                 Text('$category · $description',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.caption),
+                    style: context.captionText),
               ],
             ),
           ),
@@ -239,8 +240,9 @@ class _AvailableCard extends StatelessWidget {
                   )
                 : Icon(
                     Icons.download_rounded,
-                    color:
-                        onDownload == null ? AppColors.mute : AppColors.primary,
+                    color: onDownload == null
+                        ? context.colors.mute
+                        : AppColors.primary,
                     size: 20,
                   ),
             onPressed: downloading ? null : onDownload,
@@ -323,14 +325,14 @@ class _EmptyPanel extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Column(
         children: [
-          Icon(icon, color: AppColors.mute, size: 24),
+          Icon(icon, color: context.colors.mute, size: 24),
           const SizedBox(height: 8),
-          Text(text, style: AppTextStyles.caption),
+          Text(text, style: context.captionText),
           if (action != null) action!,
         ],
       ),

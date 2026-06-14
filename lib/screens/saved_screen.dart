@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../core/localization/app_localizations.dart';
 import '../core/network/api_client.dart';
 import '../features/bookmarks/models/bookmark.dart';
 import '../features/bookmarks/repositories/bookmark_repository.dart';
+import '../shared/widgets/app_state_widgets.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_palette.dart';
 import '../theme/tokens.dart';
 
 class SavedScreen extends StatefulWidget {
@@ -56,24 +59,28 @@ class _SavedScreenState extends State<SavedScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 96),
           children: [
-            Text('Saved Words', style: AppTextStyles.h1),
+            Text(context.tr('Saved Words'), style: context.h1),
             const SizedBox(height: 4),
-            Text('${_bookmarks.length} bookmarked vocabulary',
-                style: AppTextStyles.caption),
+            Text(
+              context.l10n.isVietnamese
+                  ? '${_bookmarks.length} từ vựng đã lưu'
+                  : '${_bookmarks.length} bookmarked vocabulary',
+              style: context.captionText,
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: _searchController,
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
-                hintText: 'Search saved words...',
-                hintStyle: AppTextStyles.caption,
-                prefixIcon: const Icon(Icons.search_rounded,
-                    color: AppColors.mute, size: 18),
+                hintText: context.tr('Search saved words...'),
+                hintStyle: context.captionText,
+                prefixIcon: Icon(Icons.search_rounded,
+                    color: context.colors.mute, size: 18),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: context.colors.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadius.lg),
-                  borderSide: const BorderSide(color: AppColors.line),
+                  borderSide: BorderSide(color: context.colors.line),
                 ),
               ),
             ),
@@ -97,18 +104,18 @@ class _SavedScreenState extends State<SavedScreen> {
                         color: Colors.white),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Review Mode',
-                            style: TextStyle(
+                        Text(context.tr('Review Mode'),
+                            style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 14)),
-                        Text('Practice all your saved words',
-                            style:
-                                TextStyle(color: Colors.white70, fontSize: 11)),
+                        Text(context.tr('Practice all your saved words'),
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 11)),
                       ],
                     ),
                   ),
@@ -116,14 +123,25 @@ class _SavedScreenState extends State<SavedScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            if (_message != null) _messageCard(),
+            if (_message != null)
+              AppStatusBanner.error(
+                message: _message!,
+                onRetry: _loadBookmarks,
+              ),
             if (_loading)
-              const Padding(
-                padding: EdgeInsets.only(top: 32),
-                child: Center(child: CircularProgressIndicator()),
+              Padding(
+                padding: const EdgeInsets.only(top: 32),
+                child: AppLoadingState(
+                  message: context.tr('Loading saved words...'),
+                ),
               )
             else if (visible.isEmpty)
-              _emptyCard()
+              AppStatePlaceholder.empty(
+                icon: Icons.bookmark_border_rounded,
+                title: query.isEmpty
+                    ? context.tr('Saved words will appear here.')
+                    : context.tr('No saved words match your search.'),
+              )
             else
               for (final bookmark in visible) ...[
                 _bookmarkTile(bookmark),
@@ -140,7 +158,7 @@ class _SavedScreenState extends State<SavedScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
@@ -167,8 +185,8 @@ class _SavedScreenState extends State<SavedScreen> {
                 Text(
                   vocab?.hiragana.isNotEmpty == true
                       ? vocab!.hiragana
-                      : 'Saved vocabulary',
-                  style: AppTextStyles.body.copyWith(
+                      : context.tr('Saved vocabulary'),
+                  style: context.bodyText.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -177,13 +195,13 @@ class _SavedScreenState extends State<SavedScreen> {
                     if (vocab?.romaji.isNotEmpty == true) vocab!.romaji,
                     if (vocab?.meaningVi.isNotEmpty == true) vocab!.meaningVi,
                   ].join(' · '),
-                  style: AppTextStyles.caption,
+                  style: context.captionText,
                 ),
               ],
             ),
           ),
           IconButton(
-            tooltip: 'Remove bookmark',
+            tooltip: context.tr('Remove bookmark'),
             icon: const Icon(Icons.bookmark_rounded,
                 color: AppColors.sakura, size: 20),
             onPressed: () => _removeBookmark(bookmark.vocabId),
@@ -192,38 +210,6 @@ class _SavedScreenState extends State<SavedScreen> {
       ),
     );
   }
-
-  Widget _messageCard() => Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.sakuraSoft,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        child: Text(
-          _message!,
-          style: const TextStyle(
-            color: AppColors.sakura,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      );
-
-  Widget _emptyCard() => Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
-        child: Column(
-          children: [
-            const Icon(Icons.bookmark_border_rounded,
-                color: AppColors.mute, size: 24),
-            const SizedBox(height: 8),
-            Text('Saved words will appear here.', style: AppTextStyles.caption),
-          ],
-        ),
-      );
 
   Future<void> _loadBookmarks() async {
     setState(() {
