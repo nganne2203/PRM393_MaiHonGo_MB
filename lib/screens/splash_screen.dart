@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/localization/app_localizations.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 
@@ -20,7 +21,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Container(
         decoration: const BoxDecoration(gradient: AppGradients.primary),
         child: Center(
@@ -47,7 +48,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   style: AppTextStyles.h1
                       .copyWith(color: Colors.white, fontSize: 28)),
               const SizedBox(height: 4),
-              Text('Learn Japanese, joyfully',
+              Text(context.tr('Learn Japanese, joyfully'),
                   style: AppTextStyles.body.copyWith(color: Colors.white70)),
               const SizedBox(height: 48),
               const SizedBox(

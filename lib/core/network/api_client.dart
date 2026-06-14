@@ -19,21 +19,30 @@ Map<String, dynamic> asJsonMap(dynamic value) {
 String? _extractErrorMessage(dynamic data) {
   if (data is! Map) return null;
 
-  final message = data['message']?.toString().trim();
-  if (message != null && message.isNotEmpty) return message;
-
   final errors = data['errors'];
   if (errors is List && errors.isNotEmpty) {
-    final first = errors.first;
-    if (first is Map) {
-      final nestedMessage = first['message']?.toString().trim();
-      if (nestedMessage != null && nestedMessage.isNotEmpty) {
-        return nestedMessage;
-      }
+    final messages = errors
+        .map((entry) {
+          if (entry is Map) {
+            final message = entry['message']?.toString().trim();
+            if (message != null && message.isNotEmpty) return message;
+
+            final fallback = entry['msg']?.toString().trim();
+            if (fallback != null && fallback.isNotEmpty) return fallback;
+          }
+          final fallback = entry.toString().trim();
+          return fallback.isEmpty ? null : fallback;
+        })
+        .whereType<String>()
+        .toList(growable: false);
+
+    if (messages.isNotEmpty) {
+      return messages.take(3).join('\n');
     }
-    final fallback = first.toString().trim();
-    if (fallback.isNotEmpty) return fallback;
   }
+
+  final message = data['message']?.toString().trim();
+  if (message != null && message.isNotEmpty) return message;
 
   return null;
 }

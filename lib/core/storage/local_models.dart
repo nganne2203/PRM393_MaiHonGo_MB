@@ -38,6 +38,25 @@ class LocalVocabulary {
 }
 
 @collection
+class LocalBookmark {
+  Id id = Isar.autoIncrement;
+
+  @Index(unique: true, replace: true)
+  late String vocabId;
+
+  String? serverId;
+  String? word;
+  String? hiragana;
+  String? meaningVi;
+  String? romaji;
+  String? audioUrl;
+  late List<String> tags;
+  late List<String> examples;
+  DateTime? createdAt;
+  late DateTime lastSyncedAt;
+}
+
+@collection
 class LocalContentPackage {
   Id id = Isar.autoIncrement;
 

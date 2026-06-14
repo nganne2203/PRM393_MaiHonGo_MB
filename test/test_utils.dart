@@ -91,7 +91,9 @@ Future<LocalDatabaseService> openTestDatabase(String name) async {
     [
       LocalLessonSchema,
       LocalVocabularySchema,
+      LocalBookmarkSchema,
       LocalContentPackageSchema,
+      LocalFlashcardSessionResultSchema,
     ],
     directory: directory.path,
     name: name,

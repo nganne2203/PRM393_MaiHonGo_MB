@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../core/localization/app_localizations.dart';
+import '../theme/app_palette.dart';
 import '../theme/tokens.dart';
-import '../theme/app_theme.dart';
 import '../widgets/primary_button.dart';
 
 class _Slide {
@@ -42,7 +43,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -50,8 +51,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: widget.onDone,
-                child: Text('Skip',
-                    style: AppTextStyles.caption
+                child: Text(context.tr('Skip'),
+                    style: context.captionText
                         .copyWith(fontWeight: FontWeight.w600)),
               ),
             ),
@@ -80,13 +81,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               style: const TextStyle(fontSize: 110)),
                         ),
                         const SizedBox(height: 40),
-                        Text(s.title,
-                            style: AppTextStyles.h1,
-                            textAlign: TextAlign.center),
+                        Text(context.tr(s.title),
+                            style: context.h1, textAlign: TextAlign.center),
                         const SizedBox(height: 12),
-                        Text(s.desc,
-                            style: AppTextStyles.body
-                                .copyWith(color: AppColors.mute, height: 1.6),
+                        Text(context.tr(s.desc),
+                            style: context.bodyText.copyWith(
+                                color: context.colors.mute, height: 1.6),
                             textAlign: TextAlign.center),
                       ],
                     ),
@@ -104,7 +104,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         width: idx == _i ? 24 : 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: idx == _i ? AppColors.primary : AppColors.line,
+                          color: idx == _i
+                              ? AppColors.primary
+                              : context.colors.line,
                           borderRadius: BorderRadius.circular(999),
                         ),
                       )),
@@ -113,7 +115,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(32, 0, 32, 32),
               child: PrimaryButton(
-                label: _i == _slides.length - 1 ? 'Get Started' : 'Next',
+                label: _i == _slides.length - 1
+                    ? context.tr('Get Started')
+                    : context.tr('Next'),
                 trailingIcon: Icons.arrow_forward_rounded,
                 onTap: () {
                   if (_i == _slides.length - 1) {
