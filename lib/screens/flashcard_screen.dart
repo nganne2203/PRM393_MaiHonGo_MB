@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/localization/app_localizations.dart';
 import '../core/network/api_client.dart';
 import '../core/state/content_state.dart';
 import '../features/bookmarks/repositories/bookmark_repository.dart';
@@ -9,6 +10,7 @@ import '../features/flashcards/screens/flashcard_summary_screen.dart';
 import '../features/vocabulary/models/vocabulary.dart';
 import '../features/vocabulary/state/vocabulary_controller.dart';
 import '../shared/widgets/app_state_widgets.dart';
+import '../theme/app_palette.dart';
 import '../theme/tokens.dart';
 import '../widgets/flashcard.dart';
 
@@ -63,7 +65,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
     final totalCards = session?.totalCards ?? cards.length;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -79,7 +81,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                       child: LinearProgressIndicator(
                         value: totalCards == 0 ? 0 : answeredCards / totalCards,
                         minHeight: 8,
-                        backgroundColor: AppColors.line,
+                        backgroundColor: context.colors.line,
                         valueColor:
                             const AlwaysStoppedAnimation(AppColors.primary),
                       ),
@@ -89,8 +91,8 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                         totalCards == 0
                             ? '0 / 0'
                             : '$answeredCards / $totalCards',
-                        style: const TextStyle(
-                            color: AppColors.mute,
+                        style: TextStyle(
+                            color: context.colors.mute,
                             fontSize: 11,
                             fontWeight: FontWeight.w600)),
                   ],
@@ -104,18 +106,20 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                     isSaved
                         ? Icons.bookmark_rounded
                         : Icons.bookmark_border_rounded,
-                    color: isSaved ? AppColors.sakura : AppColors.mute),
+                    color: isSaved ? AppColors.sakura : context.colors.mute),
               ),
             ]),
             const SizedBox(height: 16),
             Expanded(
               child: Center(
                 child: isLoading && cards.isEmpty && widget.initialCards == null
-                    ? const AppLoadingState(message: 'Loading flashcards...')
+                    ? AppLoadingState(
+                        message: context.tr('Loading flashcards...'))
                     : cards.isEmpty
                         ? (isOffline || hasError
                             ? AppStatePlaceholder.offline(
-                                title: 'Lesson not available offline',
+                                title:
+                                    context.tr('Lesson not available offline'),
                                 message: state.message,
                                 onRetry: () => ref
                                     .read(vocabularyProvider.notifier)
@@ -123,7 +127,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                               )
                             : AppStatePlaceholder.empty(
                                 icon: Icons.style_outlined,
-                                title: 'No flashcards found.',
+                                title: context.tr('No flashcards found.'),
                                 onRetry: () => ref
                                     .read(vocabularyProvider.notifier)
                                     .retry(),
@@ -270,7 +274,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
 
   Future<void> _toggleBookmark(Vocabulary vocabulary) async {
     if (vocabulary.id.isEmpty) {
-      _showMessage('Cannot bookmark this vocabulary item yet.');
+      _showMessage(context.tr('Cannot bookmark this vocabulary item yet.'));
       return;
     }
 

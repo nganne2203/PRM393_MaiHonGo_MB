@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/localization/app_localizations.dart';
 import '../features/auth/models/auth_models.dart';
 import '../features/auth/state/auth_state.dart';
 import '../features/offline/state/offline_controller.dart';
 import '../features/settings/repositories/app_preferences_repository.dart';
-import '../theme/app_theme.dart';
+import '../theme/app_palette.dart';
 import '../theme/tokens.dart';
 
 class PrivacySecurityScreen extends ConsumerStatefulWidget {
@@ -27,7 +28,7 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
     final user = authState.user;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
@@ -36,58 +37,64 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
               children: [
                 const BackButton(),
                 Expanded(
-                    child: Text('Privacy & Security', style: AppTextStyles.h2)),
+                  child: Text(
+                    context.tr('Privacy & Security'),
+                    style: context.h2,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 20),
-            Text('ACCOUNT', style: AppTextStyles.overline),
+            Text(context.tr('ACCOUNT'), style: context.overlineText),
             const SizedBox(height: 8),
             _accountCard(user),
             const SizedBox(height: 18),
-            Text('SECURITY', style: AppTextStyles.overline),
+            Text(context.tr('SECURITY'), style: context.overlineText),
             const SizedBox(height: 8),
             _actionRow(
               icon: Icons.lock_reset_rounded,
               fg: AppColors.primary,
               bg: AppColors.primarySoft,
-              title: 'Change Password',
-              subtitle: 'Update the password for this account',
+              title: context.tr('Change Password'),
+              subtitle: context.tr('Update the password for this account'),
               onTap: () => Navigator.pushNamed(context, '/change-password'),
             ),
             _actionRow(
               icon: Icons.verified_user_outlined,
               fg: AppColors.matcha,
               bg: AppColors.matchaSoft,
-              title: 'Refresh Account',
-              subtitle: 'Reload profile and session data',
+              title: context.tr('Refresh Account'),
+              subtitle: context.tr('Reload profile and session data'),
               onTap: _busy ? null : _refreshAccount,
             ),
             const SizedBox(height: 18),
-            Text('LOCAL DATA', style: AppTextStyles.overline),
+            Text(context.tr('LOCAL DATA'), style: context.overlineText),
             const SizedBox(height: 8),
             _actionRow(
               icon: Icons.download_done_rounded,
               fg: AppColors.sky,
               bg: AppColors.skySoft,
-              title: 'Offline Downloads',
-              subtitle:
-                  '${offlineState.downloadedLessons.length} lessons stored on this device',
+              title: context.tr('Offline Downloads'),
+              subtitle: context.l10n.isVietnamese
+                  ? '${offlineState.downloadedLessons.length} bài học trên thiết bị này'
+                  : '${offlineState.downloadedLessons.length} lessons stored on this device',
               onTap: () => Navigator.pushNamed(context, '/offline-downloads'),
             ),
             _actionRow(
               icon: Icons.cleaning_services_rounded,
               fg: AppColors.gold,
               bg: AppColors.goldSoft,
-              title: 'Clear Offline Downloads',
-              subtitle: 'Remove downloaded lessons from local storage',
+              title: context.tr('Clear Offline Downloads'),
+              subtitle:
+                  context.tr('Remove downloaded lessons from local storage'),
               onTap: _busy ? null : _clearOfflineDownloads,
             ),
             _actionRow(
               icon: Icons.school_outlined,
               fg: AppColors.sakura,
               bg: AppColors.sakuraSoft,
-              title: 'Show Onboarding Again',
-              subtitle: 'Reset the tutorial for the next launch',
+              title: context.tr('Show Onboarding Again'),
+              subtitle: context.tr('Reset the tutorial for the next launch'),
               onTap: _busy ? null : _resetOnboarding,
             ),
             const SizedBox(height: 20),
@@ -113,7 +120,7 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
@@ -136,18 +143,21 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  user?.name.isNotEmpty == true ? user!.name : 'Learner',
-                  style:
-                      AppTextStyles.body.copyWith(fontWeight: FontWeight.w800),
+                  user?.name.isNotEmpty == true
+                      ? user!.name
+                      : context.tr('Learner'),
+                  style: context.bodyText.copyWith(fontWeight: FontWeight.w800),
                 ),
-                Text(email, style: AppTextStyles.caption),
+                Text(email, style: context.captionText),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    _pill(provider, AppColors.primary, AppColors.primarySoft),
-                    _pill(verified, AppColors.matcha, AppColors.matchaSoft),
+                    _pill(context.tr(provider), AppColors.primary,
+                        AppColors.primarySoft),
+                    _pill(context.tr(verified), AppColors.matcha,
+                        AppColors.matchaSoft),
                   ],
                 ),
               ],
@@ -170,7 +180,7 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Row(
@@ -191,15 +201,15 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
               children: [
                 Text(
                   title,
-                  style: AppTextStyles.body.copyWith(
+                  style: context.bodyText.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                Text(subtitle, style: AppTextStyles.caption),
+                Text(subtitle, style: context.captionText),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right_rounded, color: AppColors.mute),
+          Icon(Icons.chevron_right_rounded, color: context.colors.mute),
         ],
       ),
     );
@@ -225,41 +235,46 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
       );
 
   Future<void> _refreshAccount() async {
+    final message = context.tr('Account refreshed.');
     await _runAction(() async {
       await ref.read(authControllerProvider.notifier).restoreSession();
-      _showMessage('Account refreshed.');
+      _showMessage(message);
     });
   }
 
   Future<void> _resetOnboarding() async {
+    final message = context.tr('Onboarding will show again next time.');
     await _runAction(() async {
       await _preferencesRepository.setOnboardingCompleted(false);
-      _showMessage('Onboarding will show again next time.');
+      _showMessage(message);
     });
   }
 
   Future<void> _clearOfflineDownloads() async {
+    final clearedMessage = context.tr('Offline downloads cleared.');
     final downloaded = ref.read(offlineProvider).downloadedLessons;
     if (downloaded.isEmpty) {
-      _showMessage('There are no offline downloads to clear.');
+      _showMessage(context.tr('There are no offline downloads to clear.'));
       return;
     }
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear downloads?'),
+        title: Text(context.tr('Clear downloads?')),
         content: Text(
-          'This removes ${downloaded.length} downloaded lessons from this device.',
+          context.l10n.isVietnamese
+              ? 'Thao tác này sẽ xóa ${downloaded.length} bài học đã tải khỏi thiết bị.'
+              : 'This removes ${downloaded.length} downloaded lessons from this device.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('Cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Clear'),
+            child: Text(context.tr('Clear')),
           ),
         ],
       ),
@@ -271,7 +286,7 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
       for (final item in downloaded) {
         await controller.removeDownloadedLesson(item.lesson.id);
       }
-      _showMessage('Offline downloads cleared.');
+      _showMessage(clearedMessage);
     });
   }
 

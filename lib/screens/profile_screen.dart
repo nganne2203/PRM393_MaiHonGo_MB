@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/localization/app_localizations.dart';
 import '../features/profile/models/profile_summary.dart';
 import '../features/profile/state/profile_provider.dart';
 import '../shared/widgets/app_state_widgets.dart';
-import '../theme/app_theme.dart';
+import '../theme/app_palette.dart';
 import '../theme/tokens.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -17,11 +18,11 @@ class ProfileScreen extends ConsumerWidget {
     final profile = ref.watch(profileSummaryProvider);
 
     return profile.when(
-      loading: () => const AppLoadingState(message: 'Loading profile...'),
+      loading: () => AppLoadingState(message: context.tr('Loading profile...')),
       error: (error, _) => Padding(
         padding: const EdgeInsets.all(24),
         child: AppStatePlaceholder.error(
-          title: 'Profile could not load.',
+          title: context.tr('Profile could not load.'),
           message: error.toString(),
           onRetry: () => ref.invalidate(profileSummaryProvider),
         ),
@@ -49,15 +50,15 @@ class ProfileScreen extends ConsumerWidget {
                 children: [
                   _SnapshotCard(summary: summary),
                   const SizedBox(height: 22),
-                  Text('Achievements', style: AppTextStyles.h3),
+                  Text(context.tr('Achievements'), style: context.h3),
                   const SizedBox(height: 12),
                   _AchievementsGrid(achievements: summary.achievements),
                   const SizedBox(height: 22),
-                  Text('Weekly Goal', style: AppTextStyles.h3),
+                  Text(context.tr('Weekly Goal'), style: context.h3),
                   const SizedBox(height: 12),
                   _WeeklyGoal(summary: summary),
                   const SizedBox(height: 22),
-                  Text('Account', style: AppTextStyles.h3),
+                  Text(context.tr('Account'), style: context.h3),
                   const SizedBox(height: 12),
                   _AccountCard(summary: summary),
                 ],
@@ -94,8 +95,8 @@ class _Header extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Profile',
+                Text(
+                  context.tr('Profile'),
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -134,7 +135,7 @@ class _Header extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '${summary.handle} · ${summary.roleLabel}',
+              '${summary.handle} · ${context.tr(summary.roleLabel)}',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.82),
@@ -241,39 +242,49 @@ class _StatsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
       child: Row(
         children: [
           _stat(
+            context,
             Icons.local_fire_department_rounded,
             AppColors.sakura,
             AppColors.sakuraSoft,
             summary.streakDays.toString(),
-            'Day streak',
+            context.tr('Day streak'),
           ),
           _stat(
+            context,
             Icons.menu_book_rounded,
             AppColors.primary,
             AppColors.primarySoft,
             summary.learnedWords.toString(),
-            'Words',
+            context.tr('Words'),
           ),
           _stat(
+            context,
             Icons.emoji_events_rounded,
             AppColors.matcha,
             AppColors.matchaSoft,
             summary.completedLessons.toString(),
-            'Lessons',
+            context.tr('Lessons'),
           ),
         ],
       ),
     );
   }
 
-  Widget _stat(IconData icon, Color fg, Color bg, String value, String label) {
+  Widget _stat(
+    BuildContext context,
+    IconData icon,
+    Color fg,
+    Color bg,
+    String value,
+    String label,
+  ) {
     return Expanded(
       child: Column(
         children: [
@@ -289,12 +300,16 @@ class _StatsCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+            style: TextStyle(
+              color: context.colors.ink,
+              fontWeight: FontWeight.w800,
+              fontSize: 17,
+            ),
           ),
           Text(
             label,
-            style: const TextStyle(
-              color: AppColors.mute,
+            style: TextStyle(
+              color: context.colors.mute,
               fontSize: 10,
               fontWeight: FontWeight.w600,
             ),
@@ -315,7 +330,7 @@ class _SnapshotCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
@@ -323,15 +338,20 @@ class _SnapshotCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Learning Snapshot',
-            style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w800),
+            context.tr('Learning Snapshot'),
+            style: context.bodyText.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              _miniStat('Saved', summary.savedWords.toString()),
-              _miniStat('Offline', summary.downloadedLessons.toString()),
-              _miniStat('Vocabulary', summary.totalVocabulary.toString()),
+              _miniStat(context, 'Saved', summary.savedWords.toString()),
+              _miniStat(
+                  context, 'Offline', summary.downloadedLessons.toString()),
+              _miniStat(
+                context,
+                'Vocabulary',
+                summary.totalVocabulary.toString(),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -342,8 +362,8 @@ class _SnapshotCard extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  _lastActivityLabel(summary.lastActivityAt),
-                  style: AppTextStyles.caption,
+                  _lastActivityLabel(context, summary.lastActivityAt),
+                  style: context.captionText,
                 ),
               ),
             ],
@@ -353,22 +373,22 @@ class _SnapshotCard extends StatelessWidget {
     );
   }
 
-  Widget _miniStat(String label, String value) {
+  Widget _miniStat(BuildContext context, String label, String value) {
     return Expanded(
       child: Container(
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.inputBg,
+          color: context.colors.input,
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Column(
           children: [
             Text(
               value,
-              style: AppTextStyles.h3,
+              style: context.h3,
             ),
-            Text(label, style: AppTextStyles.caption),
+            Text(context.tr(label), style: context.captionText),
           ],
         ),
       ),
@@ -432,7 +452,7 @@ class _AchievementsGrid extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                achievement.title,
+                context.tr(achievement.title),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -465,7 +485,7 @@ class _WeeklyGoal extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
@@ -490,9 +510,10 @@ class _WeeklyGoal extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  '${summary.weeklyCompletedDays} of ${summary.weeklyGoalDays} days complete',
-                  style:
-                      AppTextStyles.body.copyWith(fontWeight: FontWeight.w800),
+                  context.l10n.isVietnamese
+                      ? '${summary.weeklyCompletedDays}/${summary.weeklyGoalDays} ngày hoàn thành'
+                      : '${summary.weeklyCompletedDays} of ${summary.weeklyGoalDays} days complete',
+                  style: context.bodyText.copyWith(fontWeight: FontWeight.w800),
                 ),
               ),
             ],
@@ -503,7 +524,7 @@ class _WeeklyGoal extends StatelessWidget {
             child: LinearProgressIndicator(
               value: summary.weeklyProgress,
               minHeight: 8,
-              backgroundColor: AppColors.inputBg,
+              backgroundColor: context.colors.input,
               valueColor: const AlwaysStoppedAnimation(AppColors.primary),
             ),
           ),
@@ -535,16 +556,27 @@ class _AccountCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Column(
         children: [
-          _accountRow(Icons.mail_outline_rounded, 'Email', summary.user.email),
-          const Divider(height: 20),
-          _accountRow(Icons.login_rounded, 'Sign-in', summary.providerLabel),
+          _accountRow(
+            context,
+            Icons.mail_outline_rounded,
+            'Email',
+            summary.user.email,
+          ),
           const Divider(height: 20),
           _accountRow(
+            context,
+            Icons.login_rounded,
+            'Sign-in',
+            summary.providerLabel,
+          ),
+          const Divider(height: 20),
+          _accountRow(
+            context,
             summary.user.emailVerified
                 ? Icons.verified_rounded
                 : Icons.info_outline_rounded,
@@ -556,19 +588,24 @@ class _AccountCard extends StatelessWidget {
     );
   }
 
-  Widget _accountRow(IconData icon, String label, String value) {
+  Widget _accountRow(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value,
+  ) {
     return Row(
       children: [
         Icon(icon, color: AppColors.primary, size: 18),
         const SizedBox(width: 10),
-        Text(label, style: AppTextStyles.caption),
+        Text(context.tr(label), style: context.captionText),
         const Spacer(),
         Flexible(
           child: Text(
-            value.isEmpty ? 'Not available' : value,
+            value.isEmpty ? context.tr('Not available') : context.tr(value),
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.right,
-            style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700),
+            style: context.bodyText.copyWith(fontWeight: FontWeight.w700),
           ),
         ),
       ],
@@ -592,9 +629,9 @@ class _GoalDay extends StatelessWidget {
     final bg = completed
         ? AppColors.primary
         : muted
-            ? AppColors.line
-            : AppColors.inputBg;
-    final fg = completed ? Colors.white : AppColors.mute;
+            ? context.colors.line
+            : context.colors.input;
+    final fg = completed ? Colors.white : context.colors.mute;
 
     return Container(
       width: 34,
@@ -629,13 +666,14 @@ String _weekdayLabel(int index) {
   return labels[index.clamp(0, labels.length - 1)];
 }
 
-String _lastActivityLabel(DateTime? value) {
-  if (value == null) return 'No learning activity recorded yet.';
+String _lastActivityLabel(BuildContext context, DateTime? value) {
+  if (value == null) return context.tr('No learning activity recorded yet.');
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   final date = DateTime(value.year, value.month, value.day);
   final days = today.difference(date).inDays;
-  if (days <= 0) return 'Last activity today.';
-  if (days == 1) return 'Last activity yesterday.';
+  if (days <= 0) return context.tr('Last activity today.');
+  if (days == 1) return context.tr('Last activity yesterday.');
+  if (context.l10n.isVietnamese) return 'Hoạt động gần nhất $days ngày trước.';
   return 'Last activity $days days ago.';
 }

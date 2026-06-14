@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/media/audio_cache_service.dart';
 import '../core/media/audio_player_service.dart';
 import '../core/network/api_client.dart';
+import '../core/localization/app_localizations.dart';
 import '../core/state/content_state.dart';
 import '../features/bookmarks/repositories/bookmark_repository.dart';
 import '../features/lessons/models/lesson.dart';
@@ -11,6 +12,7 @@ import '../features/vocabulary/state/vocabulary_controller.dart';
 import '../shared/widgets/app_state_widgets.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_palette.dart';
 import '../widgets/primary_button.dart';
 
 class VocabScreen extends ConsumerStatefulWidget {
@@ -71,8 +73,8 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
             const BackButton(),
             Expanded(
               child: Text(
-                widget.lesson?.title ?? 'Vocabulary',
-                style: AppTextStyles.h2,
+                widget.lesson?.title ?? context.tr('Vocabulary'),
+                style: context.h2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -86,15 +88,19 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
                     .read(vocabularyProvider.notifier)
                     .searchVocabulary(value),
                 decoration: InputDecoration(
-                  hintText: 'Search words...',
-                  hintStyle: AppTextStyles.caption,
-                  prefixIcon: const Icon(Icons.search_rounded,
-                      color: AppColors.mute, size: 18),
+                  hintText: context.tr('Search words...'),
+                  hintStyle: context.captionText,
+                  prefixIcon: Icon(Icons.search_rounded,
+                      color: context.colors.mute, size: 18),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: context.colors.surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.lg),
-                    borderSide: const BorderSide(color: AppColors.line),
+                    borderSide: BorderSide(color: context.colors.line),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    borderSide: BorderSide(color: context.colors.line),
                   ),
                 ),
               ),
@@ -127,14 +133,15 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 6),
                       decoration: BoxDecoration(
-                        color: on ? AppColors.primary : Colors.white,
+                        color: on ? AppColors.primary : context.colors.surface,
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(
-                            color: on ? AppColors.primary : AppColors.line),
+                            color:
+                                on ? AppColors.primary : context.colors.line),
                       ),
-                      child: Text(f,
+                      child: Text(context.tr(f),
                           style: TextStyle(
-                            color: on ? Colors.white : AppColors.mute,
+                            color: on ? Colors.white : context.colors.mute,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           )),
@@ -146,7 +153,8 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
           ),
           const SizedBox(height: 12),
           if (isOffline)
-            AppStatusBanner.offline(message: 'Showing cached vocabulary'),
+            AppStatusBanner.offline(
+                message: context.tr('Showing cached vocabulary')),
           if (hasError && state.message != null)
             AppStatusBanner.error(
               message: state.message!,
@@ -154,17 +162,17 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
             ),
           Expanded(
             child: isLoading && list.isEmpty
-                ? const AppLoadingState(message: 'Loading vocabulary...')
+                ? AppLoadingState(message: context.tr('Loading vocabulary...'))
                 : list.isEmpty
                     ? (hasError || isOffline
                         ? AppStatePlaceholder.offline(
-                            title: 'Lesson not available offline',
+                            title: context.tr('Lesson not available offline'),
                             onRetry: () =>
                                 ref.read(vocabularyProvider.notifier).retry(),
                           )
                         : AppStatePlaceholder.empty(
                             icon: Icons.translate_outlined,
-                            title: 'No vocabulary found.',
+                            title: context.tr('No vocabulary found.'),
                             onRetry: () =>
                                 ref.read(vocabularyProvider.notifier).retry(),
                           ))
@@ -182,7 +190,7 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
                             return Container(
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: context.colors.surface,
                                 borderRadius:
                                     BorderRadius.circular(AppRadius.lg),
                                 boxShadow: AppShadows.card,
@@ -207,7 +215,7 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
                                   children: [
                                     Row(children: [
                                       Text(v.hiragana,
-                                          style: AppTextStyles.body.copyWith(
+                                          style: context.bodyText.copyWith(
                                               fontWeight: FontWeight.w700)),
                                       const SizedBox(width: 6),
                                       if (v.tags.isNotEmpty)
@@ -232,7 +240,7 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
                                         ),
                                     ]),
                                     Text('${v.romaji} · ${v.meaningVi}',
-                                        style: AppTextStyles.caption),
+                                        style: context.captionText),
                                   ],
                                 )),
                                 IconButton(
@@ -247,7 +255,7 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
                                           : Icons.bookmark_border_rounded,
                                       color: saved
                                           ? AppColors.sakura
-                                          : AppColors.mute,
+                                          : context.colors.mute,
                                       size: 18),
                                   onPressed: () => _toggleBookmark(v.id),
                                 ),
@@ -259,7 +267,7 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
           ),
           const SizedBox(height: 8),
           PrimaryButton(
-              label: 'Start Flashcard Session →',
+              label: context.tr('Start Flashcard Session →'),
               onTap: list.isEmpty ? () {} : widget.onStart),
         ]),
       ),
@@ -275,7 +283,7 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
   Future<void> _playAudio(String audioUrl) async {
     final url = audioUrl.trim();
     if (url.isEmpty) {
-      _showAudioMessage('Audio is not available yet.');
+      _showAudioMessage(context.tr('Audio is not available yet.'));
       return;
     }
 
@@ -315,7 +323,8 @@ class _VocabScreenState extends ConsumerState<VocabScreen> {
 
   Future<void> _toggleBookmark(String vocabId) async {
     if (vocabId.isEmpty) {
-      _showAudioMessage('Cannot bookmark this vocabulary item yet.');
+      _showAudioMessage(
+          context.tr('Cannot bookmark this vocabulary item yet.'));
       return;
     }
 

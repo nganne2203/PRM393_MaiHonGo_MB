@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/localization/app_localizations.dart';
 import '../core/network/api_client.dart';
 import '../features/auth/state/auth_state.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_palette.dart';
 import '../theme/tokens.dart';
 import '../widgets/app_input.dart';
 import '../widgets/primary_button.dart';
@@ -34,7 +36,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _register() async {
     if (_password.text != _confirmPassword.text) {
-      setState(() => _error = 'Passwords do not match.');
+      setState(() => _error = context.tr('Passwords do not match.'));
       return;
     }
 
@@ -60,7 +62,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
@@ -72,8 +74,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 child: TextButton(
                   onPressed: widget.onLogin,
                   child: Text(
-                    '< Back',
-                    style: AppTextStyles.caption.copyWith(
+                    context.tr('< Back'),
+                    style: context.captionText.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -81,38 +83,38 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Create account',
-                style: AppTextStyles.h1.copyWith(fontSize: 26),
+                context.tr('Create account'),
+                style: context.h1.copyWith(fontSize: 26),
               ),
               const SizedBox(height: 4),
               Text(
-                'Start your Japanese journey today',
-                style: AppTextStyles.caption,
+                context.tr('Start your Japanese journey today'),
+                style: context.captionText,
               ),
               const SizedBox(height: 28),
               AppInput(
-                hint: 'Name',
+                hint: context.tr('Name'),
                 icon: Icons.person_outline_rounded,
                 controller: _name,
                 valid: _name.text.trim().length >= 2,
               ),
               const SizedBox(height: 12),
               AppInput(
-                hint: 'Email',
+                hint: context.tr('Email'),
                 icon: Icons.mail_outline_rounded,
                 controller: _email,
                 valid: _email.text.contains('@'),
               ),
               const SizedBox(height: 12),
               AppInput(
-                hint: 'Password',
+                hint: context.tr('Password'),
                 icon: Icons.lock_outline_rounded,
                 controller: _password,
                 obscure: true,
               ),
               const SizedBox(height: 12),
               AppInput(
-                hint: 'Confirm password',
+                hint: context.tr('Confirm password'),
                 icon: Icons.lock_outline_rounded,
                 controller: _confirmPassword,
                 obscure: true,
@@ -129,7 +131,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ],
               const SizedBox(height: 24),
               PrimaryButton(
-                label: _loading ? 'Creating...' : 'Create Account',
+                label: _loading
+                    ? context.tr('Creating...')
+                    : context.tr('Create Account'),
                 onTap: _loading ? () {} : _register,
               ),
             ],
@@ -140,12 +144,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 }
 
-Widget _socialBtn(Widget child, {VoidCallback? onTap}) => GestureDetector(
+Widget _socialBtn(BuildContext context, Widget child, {VoidCallback? onTap}) =>
+    GestureDetector(
       onTap: onTap,
       child: Container(
         height: 48,
         decoration: BoxDecoration(
-          color: AppColors.inputBg,
+          color: context.colors.input,
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         alignment: Alignment.center,
@@ -213,7 +218,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
@@ -238,23 +243,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Welcome back',
-                style: AppTextStyles.h1.copyWith(fontSize: 26),
+                context.tr('Welcome back'),
+                style: context.h1.copyWith(fontSize: 26),
               ),
               const SizedBox(height: 4),
               Text(
-                'Sign in to continue learning Japanese',
-                style: AppTextStyles.caption,
+                context.tr('Sign in to continue learning Japanese'),
+                style: context.captionText,
               ),
               const SizedBox(height: 32),
               AppInput(
-                hint: 'Email address',
+                hint: context.tr('Email address'),
                 icon: Icons.mail_outline_rounded,
                 controller: _email,
               ),
               const SizedBox(height: 12),
               AppInput(
-                hint: 'Password',
+                hint: context.tr('Password'),
                 icon: Icons.lock_outline_rounded,
                 controller: _password,
                 obscure: true,
@@ -264,9 +269,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: _loading ? null : widget.onForgotPassword,
-                  child: const Text(
-                    'Forgot password?',
-                    style: TextStyle(
+                  child: Text(
+                    context.tr('Forgot password?'),
+                    style: const TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
@@ -286,21 +291,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ],
               const SizedBox(height: 12),
               PrimaryButton(
-                label: _loading ? 'Signing in...' : 'Sign In',
+                label: _loading
+                    ? context.tr('Signing in...')
+                    : context.tr('Sign In'),
                 onTap: _loading ? () {} : _login,
               ),
               const SizedBox(height: 24),
               Row(
                 children: [
-                  const Expanded(child: Divider(color: AppColors.line)),
+                  Expanded(child: Divider(color: context.colors.line)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
-                      'or continue with',
-                      style: AppTextStyles.caption.copyWith(fontSize: 12),
+                      context.tr('or continue with'),
+                      style: context.captionText.copyWith(fontSize: 12),
                     ),
                   ),
-                  const Expanded(child: Divider(color: AppColors.line)),
+                  Expanded(child: Divider(color: context.colors.line)),
                 ],
               ),
               const SizedBox(height: 16),
@@ -308,6 +315,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 children: [
                   Expanded(
                     child: _socialBtn(
+                      context,
                       const Text(
                         'G',
                         style: TextStyle(
@@ -327,12 +335,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   onTap: _loading ? null : widget.onRegister,
                   child: RichText(
                     text: TextSpan(
-                      style: AppTextStyles.caption,
-                      children: const [
-                        TextSpan(text: "Don't have an account? "),
+                      style: context.captionText,
+                      children: [
+                        TextSpan(text: context.tr("Don't have an account? ")),
                         TextSpan(
-                          text: 'Sign up',
-                          style: TextStyle(
+                          text: context.tr('Sign up'),
+                          style: const TextStyle(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w700,
                           ),
@@ -372,7 +380,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   Future<void> _sendCode({bool resend = false}) async {
     final email = _email.text.trim();
     if (email.isEmpty || !email.contains('@')) {
-      setState(() => _error = 'Please enter a valid email address.');
+      setState(
+          () => _error = context.tr('Please enter a valid email address.'));
       return;
     }
 
@@ -391,8 +400,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       if (mounted) {
         setState(() => _sent = true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('If the email exists, a reset code has been sent.'),
+          SnackBar(
+            content: Text(
+              context.tr('If the email exists, a reset code has been sent.'),
+            ),
           ),
         );
       }
@@ -409,11 +420,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     final newPassword = _newPassword.text;
 
     if (!RegExp(r'^\d{6}$').hasMatch(code)) {
-      setState(() => _error = 'Enter the 6-digit reset code.');
+      setState(() => _error = context.tr('Enter the 6-digit reset code.'));
       return;
     }
     if (newPassword != _confirmPassword.text) {
-      setState(() => _error = 'Passwords do not match.');
+      setState(() => _error = context.tr('Passwords do not match.'));
       return;
     }
 
@@ -430,8 +441,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password reset. Sign in with your new password.'),
+        SnackBar(
+          content: Text(
+            context.tr('Password reset. Sign in with your new password.'),
+          ),
         ),
       );
       widget.onBack();
@@ -445,7 +458,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
@@ -457,8 +470,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 child: TextButton(
                   onPressed: _loading ? null : widget.onBack,
                   child: Text(
-                    '< Back to login',
-                    style: AppTextStyles.caption.copyWith(
+                    context.tr('< Back to login'),
+                    style: context.captionText.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -481,42 +494,46 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Reset password',
-                style: AppTextStyles.h1.copyWith(fontSize: 26),
+                context.tr('Reset password'),
+                style: context.h1.copyWith(fontSize: 26),
               ),
               const SizedBox(height: 8),
               Text(
                 _sent
-                    ? 'Enter the code from your email and choose a new password.'
-                    : 'Enter your email and we will send a 6-digit reset code if the account exists.',
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.mute,
+                    ? context.tr(
+                        'Enter the code from your email and choose a new password.',
+                      )
+                    : context.tr(
+                        'Enter your email and we will send a 6-digit reset code if the account exists.',
+                      ),
+                style: context.bodyText.copyWith(
+                  color: context.colors.mute,
                   height: 1.5,
                 ),
               ),
               const SizedBox(height: 32),
               AppInput(
-                hint: 'Email address',
+                hint: context.tr('Email address'),
                 icon: Icons.mail_outline_rounded,
                 controller: _email,
               ),
               if (_sent) ...[
                 const SizedBox(height: 12),
                 AppInput(
-                  hint: '6-digit code',
+                  hint: context.tr('6-digit code'),
                   icon: Icons.pin_outlined,
                   controller: _code,
                 ),
                 const SizedBox(height: 12),
                 AppInput(
-                  hint: 'New password',
+                  hint: context.tr('New password'),
                   icon: Icons.lock_outline_rounded,
                   controller: _newPassword,
                   obscure: true,
                 ),
                 const SizedBox(height: 12),
                 AppInput(
-                  hint: 'Confirm new password',
+                  hint: context.tr('Confirm new password'),
                   icon: Icons.lock_outline_rounded,
                   controller: _confirmPassword,
                   obscure: true,
@@ -535,8 +552,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               const SizedBox(height: 24),
               PrimaryButton(
                 label: _loading
-                    ? (_sent ? 'Resetting...' : 'Sending...')
-                    : (_sent ? 'Reset Password' : 'Send Reset Code'),
+                    ? (_sent
+                        ? context.tr('Resetting...')
+                        : context.tr('Sending...'))
+                    : (_sent
+                        ? context.tr('Reset Password')
+                        : context.tr('Send Reset Code')),
                 onTap: _loading
                     ? () {}
                     : (_sent ? _resetPassword : () => _sendCode()),
@@ -547,8 +568,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   child: TextButton(
                     onPressed: _loading ? null : () => _sendCode(resend: true),
                     child: Text(
-                      'Send a new code',
-                      style: AppTextStyles.caption.copyWith(
+                      context.tr('Send a new code'),
+                      style: context.captionText.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w600,
                       ),
@@ -581,7 +602,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   Future<void> _changePassword() async {
     if (_newPassword.text != _confirmPassword.text) {
-      setState(() => _error = 'Passwords do not match.');
+      setState(() => _error = context.tr('Passwords do not match.'));
       return;
     }
 
@@ -598,8 +619,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       await ref.read(authControllerProvider.notifier).logout();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password changed. Please sign in again.'),
+        SnackBar(
+          content: Text(context.tr('Password changed. Please sign in again.')),
         ),
       );
       Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
@@ -613,7 +634,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
@@ -625,8 +646,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 child: TextButton(
                   onPressed: _loading ? null : () => Navigator.pop(context),
                   child: Text(
-                    '< Back',
-                    style: AppTextStyles.caption.copyWith(
+                    context.tr('< Back'),
+                    style: context.captionText.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -649,34 +670,34 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Change password',
-                style: AppTextStyles.h1.copyWith(fontSize: 26),
+                context.tr('Change password'),
+                style: context.h1.copyWith(fontSize: 26),
               ),
               const SizedBox(height: 8),
               Text(
-                'Update your password for this account.',
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.mute,
+                context.tr('Update your password for this account.'),
+                style: context.bodyText.copyWith(
+                  color: context.colors.mute,
                   height: 1.5,
                 ),
               ),
               const SizedBox(height: 32),
               AppInput(
-                hint: 'Current password',
+                hint: context.tr('Current password'),
                 icon: Icons.lock_outline_rounded,
                 controller: _currentPassword,
                 obscure: true,
               ),
               const SizedBox(height: 12),
               AppInput(
-                hint: 'New password',
+                hint: context.tr('New password'),
                 icon: Icons.lock_outline_rounded,
                 controller: _newPassword,
                 obscure: true,
               ),
               const SizedBox(height: 12),
               AppInput(
-                hint: 'Confirm new password',
+                hint: context.tr('Confirm new password'),
                 icon: Icons.lock_outline_rounded,
                 controller: _confirmPassword,
                 obscure: true,
@@ -693,7 +714,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               ],
               const SizedBox(height: 24),
               PrimaryButton(
-                label: _loading ? 'Saving...' : 'Change Password',
+                label: _loading
+                    ? context.tr('Saving...')
+                    : context.tr('Change Password'),
                 onTap: _loading ? () {} : _changePassword,
               ),
             ],

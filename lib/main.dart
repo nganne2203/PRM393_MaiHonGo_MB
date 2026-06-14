@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/services.dart';
 
+import 'core/localization/app_localizations.dart';
 import 'features/auth/state/auth_state.dart';
 import 'features/settings/repositories/app_preferences_repository.dart';
+import 'features/settings/state/app_settings_controller.dart';
 import 'theme/app_theme.dart';
+import 'theme/app_palette.dart';
 import 'theme/tokens.dart';
 import 'widgets/bottom_nav.dart';
 import 'screens/splash_screen.dart';
@@ -62,12 +65,34 @@ class SakuraApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(appSettingsControllerProvider).valueOrNull ??
+        const AppSettings.defaults();
+    final isDark = settings.darkModeEnabled;
+
     return MaterialApp(
       title: 'Sakura',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
-      darkTheme: AppTheme.light(),
-      themeMode: ThemeMode.light,
+      darkTheme: AppTheme.dark(),
+      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+      builder: (context, child) {
+        final palette = Theme.of(context).extension<AppPalette>();
+        final bg = palette?.bg ?? AppColors.bg;
+        return AppLocalizations(
+          languageCode: settings.languageCode,
+          child: AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle(
+              statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+              statusBarIconBrightness:
+                  isDark ? Brightness.light : Brightness.dark,
+              systemNavigationBarColor: bg,
+              systemNavigationBarIconBrightness:
+                  isDark ? Brightness.light : Brightness.dark,
+            ),
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
+      },
       home: SplashScreen(
         onDone: () => _openInitialRoute(ref),
       ),
@@ -280,8 +305,9 @@ class _MainShellState extends State<MainShell> {
           onPick: (lesson) => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => Scaffold(
-                    backgroundColor: AppColors.bg,
+                  builder: (routeContext) => Scaffold(
+                    backgroundColor:
+                        Theme.of(routeContext).scaffoldBackgroundColor,
                     body: VocabScreen(
                       lesson: lesson,
                       onStart: () => Navigator.pushNamed(
@@ -298,7 +324,7 @@ class _MainShellState extends State<MainShell> {
           onSettings: () => Navigator.pushNamed(context, '/settings')),
     ];
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: pages[_index],
       bottomNavigationBar:
           AppBottomNav(index: _index, onTap: (i) => setState(() => _index = i)),
@@ -306,8 +332,8 @@ class _MainShellState extends State<MainShell> {
           ? FloatingActionButton.extended(
               backgroundColor: AppColors.primary,
               icon: const Icon(Icons.psychology_rounded, color: Colors.white),
-              label: const Text('Quiz',
-                  style: TextStyle(
+              label: Text(context.tr('Quiz'),
+                  style: const TextStyle(
                       color: Colors.white, fontWeight: FontWeight.w700)),
               onPressed: () => Navigator.pushNamed(context, '/quiz'),
             )

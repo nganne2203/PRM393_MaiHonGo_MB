@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_palette.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 
@@ -54,14 +55,16 @@ class GhostButton extends StatelessWidget {
       child: Container(
         height: 52,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.line),
+          border: Border.all(color: context.colors.line),
         ),
         alignment: Alignment.center,
         child: Text(label,
-            style: AppTextStyles.body
-                .copyWith(fontWeight: FontWeight.w700, fontSize: 14)),
+            style: AppTextStyles.body.copyWith(
+                color: context.colors.ink,
+                fontWeight: FontWeight.w700,
+                fontSize: 14)),
       ),
     );
   }

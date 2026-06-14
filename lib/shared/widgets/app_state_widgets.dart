@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../theme/app_theme.dart';
+import '../../theme/app_palette.dart';
 import '../../theme/tokens.dart';
 
 class AppStatusBanner extends StatelessWidget {
@@ -138,24 +138,24 @@ class AppStatePlaceholder extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppColors.mute, size: 26),
+            Icon(icon, color: context.colors.mute, size: 26),
             const SizedBox(height: 8),
             Text(
               title,
-              style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700),
+              style: context.bodyText.copyWith(fontWeight: FontWeight.w700),
               textAlign: TextAlign.center,
             ),
             if (message != null) ...[
               const SizedBox(height: 4),
               Text(
                 message!,
-                style: AppTextStyles.caption,
+                style: context.captionText,
                 textAlign: TextAlign.center,
               ),
             ],
@@ -184,7 +184,7 @@ class AppLoadingState extends StatelessWidget {
           const CircularProgressIndicator(),
           if (message != null) ...[
             const SizedBox(height: 12),
-            Text(message!, style: AppTextStyles.caption),
+            Text(message!, style: context.captionText),
           ],
         ],
       ),

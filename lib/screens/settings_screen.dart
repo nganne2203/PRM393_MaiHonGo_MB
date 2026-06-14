@@ -1,27 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/localization/app_localizations.dart';
 import '../features/settings/repositories/app_preferences_repository.dart';
+import '../features/settings/state/app_settings_controller.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_palette.dart';
 import '../theme/tokens.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   final Future<void> Function() onLogout;
-  final AppPreferencesRepository preferencesRepository;
 
-  SettingsScreen({
+  const SettingsScreen({
     super.key,
     required this.onLogout,
-    AppPreferencesRepository? preferencesRepository,
-  }) : preferencesRepository =
-            preferencesRepository ?? AppPreferencesRepository();
+  });
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   AppSettings _settings = const AppSettings.defaults();
-  bool _loading = true;
   bool _saving = false;
   String? _message;
 
@@ -29,20 +29,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool get _notif => _settings.notificationsEnabled;
   bool get _audio => _settings.soundEffectsEnabled;
 
-  Color get _background => _dark ? const Color(0xFF17182A) : AppColors.bg;
-  Color get _surface => _dark ? const Color(0xFF23243A) : Colors.white;
-  Color get _primaryText => _dark ? Colors.white : AppColors.ink;
-  Color get _secondaryText =>
-      _dark ? Colors.white.withValues(alpha: 0.68) : AppColors.mute;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSettings();
-  }
+  Color get _background => context.colors.bg;
+  Color get _surface => context.colors.surface;
+  Color get _primaryText => context.colors.ink;
+  Color get _secondaryText => context.colors.mute;
 
   @override
   Widget build(BuildContext context) {
+    final settingsState = ref.watch(appSettingsControllerProvider);
+    _settings = settingsState.valueOrNull ?? _settings;
+    final loading = settingsState.isLoading;
+
     return Scaffold(
       backgroundColor: _background,
       body: SafeArea(
@@ -53,13 +50,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 BackButton(color: _primaryText),
                 Text(
-                  'Settings',
+                  context.tr('Settings'),
                   style: AppTextStyles.h2.copyWith(color: _primaryText),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            if (_loading || _saving)
+            if (loading || _saving)
               const LinearProgressIndicator(minHeight: 2)
             else
               const SizedBox(height: 2),
@@ -73,10 +70,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icons.dark_mode_outlined,
               AppColors.primary,
               AppColors.primarySoft,
-              'Dark Mode',
-              _dark
+              context.tr('Dark Mode'),
+              context.tr(_dark
                   ? 'Dark appearance is active here'
-                  : 'Easy on the eyes at night',
+                  : 'Easy on the eyes at night'),
               _dark,
               _setDarkMode,
             ),
@@ -84,10 +81,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icons.notifications_outlined,
               AppColors.sakura,
               AppColors.sakuraSoft,
-              'Notifications',
+              context.tr('Notifications'),
               _notif
-                  ? 'Daily reminder at ${_settings.reminderLabel}'
-                  : 'Daily reminders are off',
+                  ? '${context.tr('Daily reminder at')} ${_settings.reminderLabel}'
+                  : context.tr('Daily reminders are off'),
               _notif,
               _setNotifications,
             ),
@@ -96,7 +93,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Icons.schedule_rounded,
                 AppColors.gold,
                 AppColors.goldSoft,
-                'Reminder Time',
+                context.tr('Reminder Time'),
                 _settings.reminderLabel,
                 onTap: _chooseReminderTime,
               ),
@@ -104,8 +101,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icons.volume_up_outlined,
               AppColors.matcha,
               AppColors.matchaSoft,
-              'Sound Effects',
-              _audio ? 'Audio feedback in app' : 'Feedback sounds are muted',
+              context.tr('Sound Effects'),
+              context.tr(
+                _audio ? 'Audio feedback in app' : 'Feedback sounds are muted',
+              ),
               _audio,
               _setSoundEffects,
             ),
@@ -115,24 +114,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icons.language_rounded,
               AppColors.sky,
               AppColors.skySoft,
-              'App Language',
-              _settings.languageLabel,
+              context.tr('App Language'),
+              context.tr(_settings.languageLabel),
               onTap: _chooseLanguage,
             ),
             _navRow(
               Icons.track_changes_rounded,
               AppColors.matcha,
               AppColors.matchaSoft,
-              'Weekly Goal',
-              '${_settings.weeklyGoalDays} days per week',
+              context.tr('Weekly Goal'),
+              context.l10n.isVietnamese
+                  ? '${_settings.weeklyGoalDays} ngày mỗi tuần'
+                  : '${_settings.weeklyGoalDays} days per week',
               onTap: _chooseWeeklyGoal,
             ),
             _navRow(
               Icons.download_rounded,
               AppColors.primary,
               AppColors.primarySoft,
-              'Offline Downloads',
-              'Manage downloaded lessons',
+              context.tr('Offline Downloads'),
+              context.tr('Manage downloaded lessons'),
               onTap: () => Navigator.pushNamed(context, '/offline-downloads'),
             ),
             const SizedBox(height: 16),
@@ -141,8 +142,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icons.shield_outlined,
               AppColors.gold,
               AppColors.goldSoft,
-              'Privacy & Security',
-              'Password, profile, and local data',
+              context.tr('Privacy & Security'),
+              context.tr('Password, profile, and local data'),
               onTap: () => Navigator.pushNamed(context, '/privacy-security'),
             ),
             const SizedBox(height: 24),
@@ -171,8 +172,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         size: 16,
                       ),
                     const SizedBox(width: 8),
-                    const Text(
-                      'Log Out',
+                    Text(
+                      context.tr('Log Out'),
                       style: TextStyle(
                         color: AppColors.sakura,
                         fontWeight: FontWeight.w700,
@@ -198,7 +199,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _section(String s) => Padding(
         padding: const EdgeInsets.fromLTRB(4, 0, 0, 8),
-        child: Text(s, style: AppTextStyles.overline),
+        child: Text(context.tr(s), style: context.overlineText),
       );
 
   Widget _statusBanner(String message) => Container(
@@ -229,27 +230,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
 
-  Future<void> _loadSettings() async {
-    final settings = await widget.preferencesRepository.getSettings();
-    if (!mounted) return;
-    setState(() {
-      _settings = settings;
-      _loading = false;
-    });
-  }
-
-  Future<void> _save(
-      Future<AppSettings> Function() action, String message) async {
+  Future<void> _save(Future<void> Function() action, String message) async {
     setState(() {
       _saving = true;
       _message = null;
     });
     try {
-      final settings = await action();
+      await action();
       if (!mounted) return;
       setState(() {
-        _settings = settings;
-        _message = message;
+        _settings =
+            ref.read(appSettingsControllerProvider).valueOrNull ?? _settings;
+        _message = context.tr(message);
       });
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -258,42 +250,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _setDarkMode(bool value) {
     return _save(
-      () => widget.preferencesRepository.setDarkModeEnabled(value),
+      () => ref
+          .read(appSettingsControllerProvider.notifier)
+          .setDarkModeEnabled(value),
       value ? 'Dark mode enabled.' : 'Dark mode disabled.',
     );
   }
 
   Future<void> _setNotifications(bool value) {
     return _save(
-      () => widget.preferencesRepository.setNotificationsEnabled(value),
+      () => ref
+          .read(appSettingsControllerProvider.notifier)
+          .setNotificationsEnabled(value),
       value ? 'Study reminders enabled.' : 'Study reminders disabled.',
     );
   }
 
   Future<void> _setSoundEffects(bool value) {
     return _save(
-      () => widget.preferencesRepository.setSoundEffectsEnabled(value),
+      () => ref
+          .read(appSettingsControllerProvider.notifier)
+          .setSoundEffectsEnabled(value),
       value ? 'Sound effects enabled.' : 'Sound effects muted.',
     );
   }
 
   Future<void> _setLanguageCode(String code) {
     return _save(
-      () => widget.preferencesRepository.setLanguageCode(code),
+      () => ref
+          .read(appSettingsControllerProvider.notifier)
+          .setLanguageCode(code),
       'Language preference updated.',
     );
   }
 
   Future<void> _setWeeklyGoalDays(int days) {
     return _save(
-      () => widget.preferencesRepository.setWeeklyGoalDays(days),
+      () => ref
+          .read(appSettingsControllerProvider.notifier)
+          .setWeeklyGoalDays(days),
       'Weekly goal updated.',
     );
   }
 
   Future<void> _setReminderMinutes(int minutes) {
     return _save(
-      () => widget.preferencesRepository.setReminderMinutes(minutes),
+      () => ref
+          .read(appSettingsControllerProvider.notifier)
+          .setReminderMinutes(minutes),
       'Reminder time updated.',
     );
   }
@@ -307,9 +311,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _choiceTile(context, 'en', 'English'),
-            _choiceTile(context, 'vi', 'Vietnamese'),
-            _choiceTile(context, 'ja', 'Japanese'),
+            _choiceTile(context, 'en', context.tr('English')),
+            _choiceTile(context, 'vi', context.tr('Vietnamese')),
+            _choiceTile(context, 'ja', context.tr('Japanese')),
           ],
         ),
       ),
@@ -327,9 +331,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _goalTile(context, 3, 'Light pace'),
-            _goalTile(context, 5, 'Steady pace'),
-            _goalTile(context, 7, 'Daily practice'),
+            _goalTile(context, 3, context.tr('Light pace')),
+            _goalTile(context, 5, context.tr('Steady pace')),
+            _goalTile(context, 7, context.tr('Daily practice')),
           ],
         ),
       ),
@@ -355,16 +359,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Log out?'),
-        content: const Text('You can sign back in with this account anytime.'),
+        title: Text(context.tr('Log out?')),
+        content: Text(
+          context.tr('You can sign back in with this account anytime.'),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('Cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Log Out'),
+            child: Text(context.tr('Log Out')),
           ),
         ],
       ),
@@ -388,7 +394,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _goalTile(BuildContext context, int days, String label) {
     final selected = _settings.weeklyGoalDays == days;
     return ListTile(
-      title: Text('$days days per week', style: TextStyle(color: _primaryText)),
+      title: Text(
+        context.l10n.isVietnamese
+            ? '$days ngày mỗi tuần'
+            : '$days days per week',
+        style: TextStyle(color: _primaryText),
+      ),
       subtitle: Text(label, style: TextStyle(color: _secondaryText)),
       trailing: selected
           ? const Icon(Icons.check_rounded, color: AppColors.primary)

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/localization/app_localizations.dart';
 import '../core/state/content_state.dart';
 import '../features/lessons/models/lesson.dart';
 import '../features/lessons/state/lesson_controller.dart';
 import '../shared/widgets/app_state_widgets.dart';
 import '../theme/tokens.dart';
-import '../theme/app_theme.dart';
+import '../theme/app_palette.dart';
 
 class CategoriesScreen extends ConsumerWidget {
   final ValueChanged<Lesson> onPick;
@@ -24,13 +25,17 @@ class CategoriesScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Lessons', style: AppTextStyles.h1),
+            Text(context.tr('Lessons'), style: context.h1),
             const SizedBox(height: 4),
-            Text('Pick a category to start learning',
-                style: AppTextStyles.caption),
+            Text(
+              context.tr('Pick a category to start learning'),
+              style: context.captionText,
+            ),
             const SizedBox(height: 20),
             if (isOffline)
-              AppStatusBanner.offline(message: 'Showing cached lessons'),
+              AppStatusBanner.offline(
+                message: context.tr('Showing cached lessons'),
+              ),
             if (hasError && state.message != null)
               AppStatusBanner.error(
                 message: state.message!,
@@ -38,11 +43,11 @@ class CategoriesScreen extends ConsumerWidget {
               ),
             Expanded(
               child: isLoading && state.lessons.isEmpty
-                  ? const AppLoadingState(message: 'Loading lessons...')
+                  ? AppLoadingState(message: context.tr('Loading lessons...'))
                   : state.lessons.isEmpty
                       ? AppStatePlaceholder.empty(
                           icon: Icons.menu_book_outlined,
-                          title: 'No lessons available yet.',
+                          title: context.tr('No lessons available yet.'),
                         )
                       : RefreshIndicator(
                           onRefresh: () =>
@@ -147,8 +152,10 @@ class _CategoryCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                     item.downloaded
-                        ? 'Offline ready'
-                        : '${item.vocabIds.length} words',
+                        ? context.tr('Offline ready')
+                        : context.l10n.isVietnamese
+                            ? '${item.vocabIds.length} từ'
+                            : '${item.vocabIds.length} words',
                     style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 10,
