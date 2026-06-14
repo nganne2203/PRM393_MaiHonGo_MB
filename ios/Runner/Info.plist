@@ -26,6 +26,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>MaiHongo records your voice so the backend can evaluate speaking practice.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>MaiHongo lets you choose a profile photo for your avatar.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

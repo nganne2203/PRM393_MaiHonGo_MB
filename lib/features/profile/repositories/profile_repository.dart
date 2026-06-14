@@ -8,6 +8,7 @@ import '../../progress/models/progress_models.dart';
 import '../../progress/repositories/progress_repository.dart';
 import '../../settings/repositories/app_preferences_repository.dart';
 import '../models/profile_summary.dart';
+import 'profile_preferences_repository.dart';
 
 class ProfileRepository {
   final AuthRepository authRepository;
@@ -15,6 +16,7 @@ class ProfileRepository {
   final ProgressRepository progressRepository;
   final LocalDatabaseService localDatabase;
   final AppPreferencesRepository preferencesRepository;
+  final ProfilePreferencesRepository profilePreferencesRepository;
 
   const ProfileRepository({
     required this.authRepository,
@@ -22,11 +24,13 @@ class ProfileRepository {
     required this.progressRepository,
     required this.localDatabase,
     required this.preferencesRepository,
+    required this.profilePreferencesRepository,
   });
 
   Future<ProfileSummary> getProfile(UserModel? fallbackUser) async {
     final user = await _loadUser(fallbackUser);
     final settings = await preferencesRepository.getSettings();
+    final editableProfile = await profilePreferencesRepository.getProfile();
     final bookmarks = await _loadBookmarks();
     final progress = await _loadProgress();
     final lessons = await _orEmpty(localDatabase.getLessons);
@@ -73,7 +77,15 @@ class ProfileRepository {
       weeklyCompletedDays: _weeklyCompletedDays(activityDates),
       weeklyGoalDays: settings.weeklyGoalDays,
       lastActivityAt: _latestActivityAt(activityDates),
+      displayNameOverride: editableProfile.name,
+      avatarOverride: editableProfile.avatarPath,
+      birthday: editableProfile.birthday,
+      gender: editableProfile.gender,
     );
+  }
+
+  Future<EditableProfile> saveEditableProfile(EditableProfile profile) {
+    return profilePreferencesRepository.saveProfile(profile);
   }
 
   Future<UserModel> _loadUser(UserModel? fallbackUser) async {

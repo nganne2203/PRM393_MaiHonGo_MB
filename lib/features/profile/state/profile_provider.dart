@@ -6,6 +6,7 @@ import '../../bookmarks/repositories/bookmark_repository.dart';
 import '../../progress/repositories/progress_repository.dart';
 import '../../settings/repositories/app_preferences_repository.dart';
 import '../models/profile_summary.dart';
+import '../repositories/profile_preferences_repository.dart';
 import '../repositories/profile_repository.dart';
 
 final profileRepositoryProvider =
@@ -22,6 +23,7 @@ final profileRepositoryProvider =
     progressRepository: ProgressRepository(apiClient: apiClient),
     localDatabase: localDatabase,
     preferencesRepository: AppPreferencesRepository(),
+    profilePreferencesRepository: ProfilePreferencesRepository(),
   );
 });
 

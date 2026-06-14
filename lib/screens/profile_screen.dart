@@ -1,8 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../core/localization/app_localizations.dart';
 import '../features/profile/models/profile_summary.dart';
+import '../features/profile/repositories/profile_preferences_repository.dart';
 import '../features/profile/state/profile_provider.dart';
 import '../shared/widgets/app_state_widgets.dart';
 import '../theme/app_palette.dart';
@@ -35,7 +40,11 @@ class ProfileScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.only(bottom: 96),
           children: [
-            _Header(summary: summary, onSettings: onSettings),
+            _Header(
+              summary: summary,
+              onSettings: onSettings,
+              onEdit: () => _openEditProfile(context, ref, summary),
+            ),
             Transform.translate(
               offset: const Offset(0, -28),
               child: Padding(
@@ -69,15 +78,41 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
   }
+
+  Future<void> _openEditProfile(
+    BuildContext context,
+    WidgetRef ref,
+    ProfileSummary summary,
+  ) async {
+    final saved = await showModalBottomSheet<EditableProfile>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.colors.surface,
+      showDragHandle: true,
+      builder: (context) => _EditProfileSheet(summary: summary),
+    );
+    if (saved == null) return;
+
+    final repository = await ref.read(profileRepositoryProvider.future);
+    await repository.saveEditableProfile(saved);
+    ref.invalidate(profileSummaryProvider);
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.tr('Profile updated.'))),
+    );
+  }
 }
 
 class _Header extends StatelessWidget {
   final ProfileSummary summary;
   final VoidCallback onSettings;
+  final VoidCallback onEdit;
 
   const _Header({
     required this.summary,
     required this.onSettings,
+    required this.onEdit,
   });
 
   @override
@@ -122,16 +157,26 @@ class _Header extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 18),
-            _Avatar(summary: summary),
+            _Avatar(summary: summary, onEdit: onEdit),
             const SizedBox(height: 14),
-            Text(
-              summary.displayName,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 22,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Text(
+                    summary.displayName,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 22,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _EditCircleButton(onTap: onEdit),
+              ],
             ),
             const SizedBox(height: 4),
             Text(
@@ -187,47 +232,385 @@ class _Header extends StatelessWidget {
 
 class _Avatar extends StatelessWidget {
   final ProfileSummary summary;
+  final VoidCallback onEdit;
 
-  const _Avatar({required this.summary});
+  const _Avatar({required this.summary, required this.onEdit});
 
   @override
   Widget build(BuildContext context) {
-    final avatar = summary.user.avatar;
+    final avatar = summary.avatar;
 
-    return Container(
-      width: 104,
-      height: 104,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.3),
-        shape: BoxShape.circle,
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.4), width: 4),
-      ),
-      clipBehavior: Clip.antiAlias,
-      alignment: Alignment.center,
-      child: avatar == null || avatar.isEmpty
-          ? Text(
-              _initials(summary.displayName),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 34,
-                fontWeight: FontWeight.w900,
-              ),
-            )
-          : Image.network(
-              avatar,
-              width: 104,
-              height: 104,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Text(
-                _initials(summary.displayName),
-                style: const TextStyle(
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 104,
+          height: 104,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.3),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.4),
+              width: 4,
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          alignment: Alignment.center,
+          child: avatar == null || avatar.isEmpty
+              ? _InitialsAvatar(name: summary.displayName)
+              : _AvatarImage(path: avatar, name: summary.displayName),
+        ),
+        Positioned(
+          right: -2,
+          bottom: 0,
+          child: Tooltip(
+            message: context.tr('Edit profile'),
+            child: GestureDetector(
+              onTap: onEdit,
+              child: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
                   color: Colors.white,
-                  fontSize: 34,
-                  fontWeight: FontWeight.w900,
+                  shape: BoxShape.circle,
+                  boxShadow: AppShadows.card,
+                ),
+                child: const Icon(
+                  Icons.edit_rounded,
+                  color: AppColors.primary,
+                  size: 18,
                 ),
               ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EditCircleButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _EditCircleButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: context.tr('Edit profile'),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.2),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.edit_rounded, color: Colors.white, size: 16),
+        ),
+      ),
+    );
+  }
+}
+
+class _AvatarImage extends StatelessWidget {
+  final String path;
+  final String name;
+
+  const _AvatarImage({required this.path, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return Image.network(
+        path,
+        width: 104,
+        height: 104,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _InitialsAvatar(name: name),
+      );
+    }
+
+    return Image.file(
+      File(path),
+      width: 104,
+      height: 104,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _InitialsAvatar(name: name),
+    );
+  }
+}
+
+class _InitialsAvatar extends StatelessWidget {
+  final String name;
+
+  const _InitialsAvatar({required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      _initials(name),
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 34,
+        fontWeight: FontWeight.w900,
+      ),
+    );
+  }
+}
+
+class _EditProfileSheet extends StatefulWidget {
+  final ProfileSummary summary;
+
+  const _EditProfileSheet({required this.summary});
+
+  @override
+  State<_EditProfileSheet> createState() => _EditProfileSheetState();
+}
+
+class _EditProfileSheetState extends State<_EditProfileSheet> {
+  late final TextEditingController _nameController;
+  String? _avatarPath;
+  DateTime? _birthday;
+  String _gender = 'prefer_not_to_say';
+  bool _picking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.summary.displayName);
+    _avatarPath = widget.summary.avatar;
+    _birthday = widget.summary.birthday;
+    _gender = widget.summary.gender ?? 'prefer_not_to_say';
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.viewInsetsOf(context).bottom;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24, 0, 24, bottom + 24),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    context.tr('Edit profile'),
+                    style: context.h2,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 92,
+                    height: 92,
+                    decoration: BoxDecoration(
+                      color: context.colors.input,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: context.colors.line, width: 3),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    alignment: Alignment.center,
+                    child: _avatarPath == null || _avatarPath!.isEmpty
+                        ? Text(
+                            _initials(_nameController.text),
+                            style: context.h1.copyWith(fontSize: 30),
+                          )
+                        : _AvatarImage(
+                            path: _avatarPath!,
+                            name: _nameController.text,
+                          ),
+                  ),
+                  Positioned(
+                    right: -4,
+                    bottom: -2,
+                    child: IconButton.filled(
+                      onPressed: _picking ? null : _pickAvatar,
+                      icon: _picking
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.photo_camera_rounded, size: 18),
+                      tooltip: context.tr('Upload avatar'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextButton.icon(
+              onPressed: _avatarPath == null || _avatarPath!.isEmpty
+                  ? null
+                  : () => setState(() => _avatarPath = null),
+              icon: const Icon(Icons.delete_outline_rounded),
+              label: Text(context.tr('Remove avatar')),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _nameController,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                labelText: context.tr('Display name'),
+                prefixIcon: const Icon(Icons.person_outline_rounded),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _profilePickerRow(
+              context,
+              icon: Icons.cake_outlined,
+              title: context.tr('Birthday'),
+              value: _birthday == null
+                  ? context.tr('Not set')
+                  : _formatBirthday(_birthday!),
+              onTap: _pickBirthday,
+            ),
+            const SizedBox(height: 12),
+            Text(context.tr('Gender'), style: context.captionText),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _genderChip('female', 'Female'),
+                _genderChip('male', 'Male'),
+                _genderChip('non_binary', 'Non-binary'),
+                _genderChip('prefer_not_to_say', 'Prefer not to say'),
+              ],
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: _save,
+              icon: const Icon(Icons.check_rounded),
+              label: Text(context.tr('Save profile')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _profilePickerRow(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: context.colors.input,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: context.colors.line),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.primary, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: context.bodyText
+                          .copyWith(fontWeight: FontWeight.w800)),
+                  Text(value, style: context.captionText),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: context.colors.mute),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _genderChip(String value, String label) {
+    final selected = _gender == value;
+    return ChoiceChip(
+      label: Text(context.tr(label)),
+      selected: selected,
+      onSelected: (_) => setState(() => _gender = value),
+      selectedColor: AppColors.primarySoft,
+      labelStyle: TextStyle(
+        color: selected ? AppColors.primary : context.colors.ink,
+        fontWeight: FontWeight.w700,
+      ),
+      side: BorderSide(
+        color: selected ? AppColors.primary : context.colors.line,
+      ),
+    );
+  }
+
+  Future<void> _pickAvatar() async {
+    setState(() => _picking = true);
+    try {
+      final image = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 900,
+        imageQuality: 88,
+      );
+      if (image == null) return;
+      final directory = await getApplicationDocumentsDirectory();
+      final extension = image.path.split('.').last;
+      final target = File(
+        '${directory.path}/profile_avatar_${DateTime.now().millisecondsSinceEpoch}.$extension',
+      );
+      await File(image.path).copy(target.path);
+      if (!mounted) return;
+      setState(() => _avatarPath = target.path);
+    } finally {
+      if (mounted) setState(() => _picking = false);
+    }
+  }
+
+  Future<void> _pickBirthday() async {
+    final now = DateTime.now();
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: _birthday ?? DateTime(now.year - 18, now.month, now.day),
+      firstDate: DateTime(now.year - 100),
+      lastDate: now,
+    );
+    if (selected == null) return;
+    setState(() => _birthday = selected);
+  }
+
+  void _save() {
+    final name = _nameController.text.trim();
+    Navigator.pop(
+      context,
+      EditableProfile(
+        name: name.isEmpty ? null : name,
+        avatarPath: _avatarPath,
+        birthday: _birthday,
+        gender: _gender,
+      ),
     );
   }
 }
@@ -583,6 +966,22 @@ class _AccountCard extends StatelessWidget {
             'Email status',
             summary.user.emailVerified ? 'Verified' : 'Not verified',
           ),
+          const Divider(height: 20),
+          _accountRow(
+            context,
+            Icons.cake_outlined,
+            'Birthday',
+            summary.birthday == null
+                ? 'Not set'
+                : _formatBirthday(summary.birthday!),
+          ),
+          const Divider(height: 20),
+          _accountRow(
+            context,
+            Icons.badge_outlined,
+            'Gender',
+            _genderLabel(summary.gender),
+          ),
         ],
       ),
     );
@@ -664,6 +1063,26 @@ String _initials(String value) {
 String _weekdayLabel(int index) {
   const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   return labels[index.clamp(0, labels.length - 1)];
+}
+
+String _formatBirthday(DateTime value) {
+  final month = value.month.toString().padLeft(2, '0');
+  final day = value.day.toString().padLeft(2, '0');
+  return '${value.year}-$month-$day';
+}
+
+String _genderLabel(String? value) {
+  switch (value) {
+    case 'female':
+      return 'Female';
+    case 'male':
+      return 'Male';
+    case 'non_binary':
+      return 'Non-binary';
+    case 'prefer_not_to_say':
+    default:
+      return 'Prefer not to say';
+  }
 }
 
 String _lastActivityLabel(BuildContext context, DateTime? value) {
