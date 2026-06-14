@@ -12,6 +12,21 @@ Owner: Member 5
 - Run `flutter analyze`.
 - Run `flutter test`.
 
+## Latest Regression Run
+
+Date: 2026-06-14
+Owner: Member 5
+
+- `flutter analyze`: passed, no issues found.
+- `flutter test`: passed, all tests passed. Targeted Member 5 coverage includes shared state widgets, bookmark cache fallback, settings/onboarding persistence, and editable profile preferences.
+- Known tooling warning: Flutter reports that `isar_flutter_libs` and `flutter_secure_storage` do not yet support Swift Package Manager for Apple targets. This is a dependency warning, not a current analyzer or test failure.
+
+## Current Bug Log
+
+| ID | Feature | Severity | Owner | Status | Notes |
+| --- | --- | --- | --- | --- | --- |
+| None | Member 5 regression scope | N/A | Member 5 | Verified | No blocker, high, medium, or low defects were found in the automated regression run above. |
+
 ## Bug Triage Fields
 
 Use these fields for sprint bug logging:
