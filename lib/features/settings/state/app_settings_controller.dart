@@ -44,8 +44,28 @@ class AppSettingsController extends StateNotifier<AsyncValue<AppSettings>> {
     return _save(() => _repository.setReminderMinutes(minutes));
   }
 
+  Future<void> setNotificationPlan(String plan) {
+    return _save(() => _repository.setNotificationPlan(plan));
+  }
+
+  Future<void> setSoundEffectPack(String pack) {
+    return _save(() => _repository.setSoundEffectPack(pack));
+  }
+
+  Future<void> setSoundEffectVolume(int volume) {
+    return _save(() => _repository.setSoundEffectVolume(volume));
+  }
+
   Future<void> setWeeklyGoalDays(int days) {
     return _save(() => _repository.setWeeklyGoalDays(days));
+  }
+
+  Future<void> setDailyWordGoal(int words) {
+    return _save(() => _repository.setDailyWordGoal(words));
+  }
+
+  Future<void> setDailyStudyMinutes(int minutes) {
+    return _save(() => _repository.setDailyStudyMinutes(minutes));
   }
 
   Future<void> _save(Future<AppSettings> Function() action) async {

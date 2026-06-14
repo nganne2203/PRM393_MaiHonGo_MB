@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import '../core/localization/app_localizations.dart';
 import '../features/settings/repositories/app_preferences_repository.dart';
@@ -7,6 +8,13 @@ import '../features/settings/state/app_settings_controller.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_palette.dart';
 import '../theme/tokens.dart';
+
+const _reminderPresets = [
+  _ReminderPreset(7 * 60 + 30, 'Morning study', Icons.wb_sunny_outlined),
+  _ReminderPreset(12 * 60 + 15, 'Lunch review', Icons.lunch_dining_outlined),
+  _ReminderPreset(20 * 60, 'Evening review', Icons.nights_stay_outlined),
+  _ReminderPreset(21 * 60 + 30, 'Night recap', Icons.bedtime_outlined),
+];
 
 class SettingsScreen extends ConsumerStatefulWidget {
   final Future<void> Function() onLogout;
@@ -82,11 +90,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               AppColors.sakura,
               AppColors.sakuraSoft,
               context.tr('Notifications'),
-              _notif
-                  ? '${context.tr('Daily reminder at')} ${_settings.reminderLabel}'
-                  : context.tr('Daily reminders are off'),
+              _notificationSummary,
               _notif,
               _setNotifications,
+              onTap: _chooseNotificationSettings,
             ),
             if (_notif)
               _navRow(
@@ -94,7 +101,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 AppColors.gold,
                 AppColors.goldSoft,
                 context.tr('Reminder Time'),
-                _settings.reminderLabel,
+                _reminderSummary,
                 onTap: _chooseReminderTime,
               ),
             _toggleRow(
@@ -107,7 +114,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               _audio,
               _setSoundEffects,
+              onTap: _chooseSoundEffects,
             ),
+            if (_audio)
+              _navRow(
+                Icons.graphic_eq_rounded,
+                AppColors.matcha,
+                AppColors.matchaSoft,
+                context.tr('Sound Style'),
+                _soundSummary,
+                onTap: _chooseSoundEffects,
+              ),
             const SizedBox(height: 16),
             _section('LEARNING'),
             _navRow(
@@ -123,9 +140,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               AppColors.matcha,
               AppColors.matchaSoft,
               context.tr('Weekly Goal'),
-              context.l10n.isVietnamese
-                  ? '${_settings.weeklyGoalDays} ngày mỗi tuần'
-                  : '${_settings.weeklyGoalDays} days per week',
+              _weeklyGoalSummary,
               onTap: _chooseWeeklyGoal,
             ),
             _navRow(
@@ -230,6 +245,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       );
 
+  String get _notificationSummary {
+    if (!_notif) return context.tr('Daily reminders are off');
+    return '${context.tr(_settings.notificationPlanLabel)} · ${context.tr('Daily reminder at')} ${_settings.reminderLabel}';
+  }
+
+  String get _reminderSummary {
+    return '${_settings.reminderLabel} · ${_timeOfDayLabel(_settings.reminderMinutes)}';
+  }
+
+  String get _soundSummary {
+    return '${context.tr(_settings.soundEffectPackLabel)} · ${_settings.soundEffectVolume}%';
+  }
+
+  String get _weeklyGoalSummary {
+    if (context.l10n.isVietnamese) {
+      return '${_settings.weeklyGoalDays} ngày/tuần · ${_settings.dailyWordGoal} từ/ngày · ${_settings.dailyStudyMinutes} phút';
+    }
+    return '${_settings.weeklyGoalDays} days/week · ${_settings.dailyWordGoal} words/day · ${_settings.dailyStudyMinutes} min';
+  }
+
+  String _timeOfDayLabel(int minutes) {
+    final hour = minutes ~/ 60;
+    if (hour >= 5 && hour < 11) return context.tr('Morning');
+    if (hour >= 11 && hour < 15) return context.tr('Afternoon');
+    if (hour >= 15 && hour < 20) return context.tr('Evening');
+    return context.tr('Night');
+  }
+
   Future<void> _save(Future<void> Function() action, String message) async {
     setState(() {
       _saving = true;
@@ -302,6 +345,91 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Future<void> _setNotificationPlan(String plan) {
+    return _save(
+      () => ref
+          .read(appSettingsControllerProvider.notifier)
+          .setNotificationPlan(plan),
+      'Notification schedule updated.',
+    );
+  }
+
+  Future<void> _setSoundEffectPack(String pack) {
+    return _save(
+      () => ref
+          .read(appSettingsControllerProvider.notifier)
+          .setSoundEffectPack(pack),
+      'Sound style updated.',
+    );
+  }
+
+  Future<void> _setSoundEffectVolume(int volume) {
+    return _save(
+      () => ref
+          .read(appSettingsControllerProvider.notifier)
+          .setSoundEffectVolume(volume),
+      'Sound volume updated.',
+    );
+  }
+
+  Future<void> _setDailyWordGoal(int words) {
+    return _save(
+      () => ref
+          .read(appSettingsControllerProvider.notifier)
+          .setDailyWordGoal(words),
+      'Weekly goal updated.',
+    );
+  }
+
+  Future<void> _setDailyStudyMinutes(int minutes) {
+    return _save(
+      () => ref
+          .read(appSettingsControllerProvider.notifier)
+          .setDailyStudyMinutes(minutes),
+      'Weekly goal updated.',
+    );
+  }
+
+  Future<void> _chooseNotificationSettings() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: _surface,
+      showDragHandle: true,
+      builder: (context) => _settingsSheet(
+        title: context.tr('Study Notifications'),
+        subtitle: context.tr('Choose when Sakura should nudge you to study.'),
+        children: [
+          _optionTile(
+            context,
+            value: 'daily',
+            selected: _settings.notificationPlan,
+            title: context.tr('Every day'),
+            subtitle: context.tr('A steady reminder at your chosen time.'),
+            icon: Icons.calendar_month_rounded,
+          ),
+          _optionTile(
+            context,
+            value: 'weekdays',
+            selected: _settings.notificationPlan,
+            title: context.tr('Weekdays only'),
+            subtitle: context.tr('Study reminders from Monday to Friday.'),
+            icon: Icons.work_outline_rounded,
+          ),
+          _optionTile(
+            context,
+            value: 'streak',
+            selected: _settings.notificationPlan,
+            title: context.tr('Streak rescue'),
+            subtitle: context.tr('Only remind me when my streak needs saving.'),
+            icon: Icons.local_fire_department_outlined,
+          ),
+        ],
+      ),
+    );
+    if (selected == null || selected == _settings.notificationPlan) return;
+    await _setNotificationPlan(selected);
+  }
+
   Future<void> _chooseLanguage() async {
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -327,15 +455,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       backgroundColor: _surface,
       showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _goalTile(context, 3, context.tr('Light pace')),
-            _goalTile(context, 5, context.tr('Steady pace')),
-            _goalTile(context, 7, context.tr('Daily practice')),
-          ],
-        ),
+      builder: (context) => _settingsSheet(
+        title: context.tr('Weekly Goal'),
+        subtitle: context.tr('Tune the amount of practice you want each week.'),
+        children: [
+          _goalTile(context, 3, context.tr('Light pace')),
+          _goalTile(context, 5, context.tr('Steady pace')),
+          _goalTile(context, 7, context.tr('Daily practice')),
+          const SizedBox(height: 12),
+          _stepperTile(
+            context,
+            title: context.tr('Words per day'),
+            value: _settings.dailyWordGoal,
+            min: 1,
+            max: 50,
+            step: 5,
+            suffix: context.tr('words'),
+            onChanged: (value) {
+              Navigator.pop(context);
+              _setDailyWordGoal(value);
+            },
+          ),
+          _stepperTile(
+            context,
+            title: context.tr('Study minutes'),
+            value: _settings.dailyStudyMinutes,
+            min: 5,
+            max: 120,
+            step: 5,
+            suffix: context.tr('min'),
+            onChanged: (value) {
+              Navigator.pop(context);
+              _setDailyStudyMinutes(value);
+            },
+          ),
+        ],
       ),
     );
     if (selected == null || selected == _settings.weeklyGoalDays) return;
@@ -343,16 +497,112 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _chooseReminderTime() async {
-    final initial = TimeOfDay(
-      hour: _settings.reminderMinutes ~/ 60,
-      minute: _settings.reminderMinutes % 60,
-    );
-    final selected = await showTimePicker(
+    const customValue = -1;
+    final selected = await showModalBottomSheet<int>(
       context: context,
-      initialTime: initial,
+      backgroundColor: _surface,
+      showDragHandle: true,
+      builder: (context) => _settingsSheet(
+        title: context.tr('Reminder Time'),
+        subtitle: context.tr('Pick a time that fits your study rhythm.'),
+        children: [
+          for (final preset in _reminderPresets)
+            _optionTile(
+              context,
+              value: preset.minutes,
+              selected: _settings.reminderMinutes,
+              title: preset.label(context),
+              subtitle: preset.timeLabel,
+              icon: preset.icon,
+            ),
+          _optionTile(
+            context,
+            value: customValue,
+            selected: customValue,
+            title: context.tr('Custom time'),
+            subtitle: context.tr('Use the system time picker'),
+            icon: Icons.more_time_rounded,
+          ),
+        ],
+      ),
     );
     if (selected == null) return;
-    await _setReminderMinutes(selected.hour * 60 + selected.minute);
+    if (selected == customValue) {
+      final initial = TimeOfDay(
+        hour: _settings.reminderMinutes ~/ 60,
+        minute: _settings.reminderMinutes % 60,
+      );
+      if (!mounted) return;
+      final time = await showTimePicker(
+        context: context,
+        initialTime: initial,
+      );
+      if (time == null) return;
+      await _setReminderMinutes(time.hour * 60 + time.minute);
+      return;
+    }
+    if (selected == _settings.reminderMinutes) return;
+    await _setReminderMinutes(selected);
+  }
+
+  Future<void> _chooseSoundEffects() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: _surface,
+      showDragHandle: true,
+      builder: (context) => _settingsSheet(
+        title: context.tr('Sound Effects'),
+        subtitle: context.tr('Choose the feedback style and volume.'),
+        children: [
+          _optionTile(
+            context,
+            value: 'sakura',
+            selected: _settings.soundEffectPack,
+            title: context.tr('Sakura pop'),
+            subtitle:
+                context.tr('Bright taps for correct answers and rewards.'),
+            icon: Icons.auto_awesome_rounded,
+          ),
+          _optionTile(
+            context,
+            value: 'minimal',
+            selected: _settings.soundEffectPack,
+            title: context.tr('Minimal'),
+            subtitle: context.tr('Short, quiet feedback for focused sessions.'),
+            icon: Icons.volume_down_outlined,
+          ),
+          _optionTile(
+            context,
+            value: 'focus',
+            selected: _settings.soundEffectPack,
+            title: context.tr('Focus'),
+            subtitle: context.tr('Softer cues for night study.'),
+            icon: Icons.nightlight_round,
+          ),
+          const SizedBox(height: 12),
+          _stepperTile(
+            context,
+            title: context.tr('Effect volume'),
+            value: _settings.soundEffectVolume,
+            min: 0,
+            max: 100,
+            step: 10,
+            suffix: '%',
+            onChanged: (value) {
+              Navigator.pop(context);
+              _setSoundEffectVolume(value);
+            },
+          ),
+          TextButton.icon(
+            onPressed: () => SystemSound.play(SystemSoundType.click),
+            icon: const Icon(Icons.play_arrow_rounded),
+            label: Text(context.tr('Preview sound')),
+          ),
+        ],
+      ),
+    );
+    if (selected == null || selected == _settings.soundEffectPack) return;
+    await _setSoundEffectPack(selected);
   }
 
   Future<void> _confirmLogout() async {
@@ -405,6 +655,116 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ? const Icon(Icons.check_rounded, color: AppColors.primary)
           : null,
       onTap: () => Navigator.pop(context, days),
+    );
+  }
+
+  Widget _settingsSheet({
+    required String title,
+    required String subtitle,
+    required List<Widget> children,
+  }) {
+    return SafeArea(
+      child: ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+        children: [
+          Text(title, style: context.h3),
+          const SizedBox(height: 4),
+          Text(subtitle, style: context.captionText),
+          const SizedBox(height: 16),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _optionTile<T>(
+    BuildContext context, {
+    required T value,
+    required T selected,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
+    final active = value == selected;
+    return GestureDetector(
+      onTap: () => Navigator.pop(context, value),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color:
+              active ? AppColors.primary.withValues(alpha: 0.12) : _background,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: active ? AppColors.primary : context.colors.line,
+          ),
+        ),
+        child: Row(
+          children: [
+            _icon(icon, active ? AppColors.primary : AppColors.sky,
+                active ? AppColors.primarySoft : AppColors.skySoft),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: context.bodyText
+                          .copyWith(fontWeight: FontWeight.w800)),
+                  Text(subtitle, style: context.captionText),
+                ],
+              ),
+            ),
+            if (active)
+              const Icon(Icons.check_rounded, color: AppColors.primary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _stepperTile(
+    BuildContext context, {
+    required String title,
+    required int value,
+    required int min,
+    required int max,
+    required int step,
+    required String suffix,
+    required ValueChanged<int> onChanged,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _background,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: context.colors.line),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style:
+                        context.bodyText.copyWith(fontWeight: FontWeight.w800)),
+                Text('$value $suffix', style: context.captionText),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: value <= min ? null : () => onChanged(value - step),
+            icon: const Icon(Icons.remove_rounded),
+          ),
+          IconButton(
+            onPressed: value >= max ? null : () => onChanged(value + step),
+            icon: const Icon(Icons.add_rounded),
+          ),
+        ],
+      ),
     );
   }
 
@@ -475,8 +835,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     String label,
     String sub,
     bool value,
-    ValueChanged<bool> onChange,
-  ) =>
+    ValueChanged<bool> onChange, {
+    VoidCallback? onTap,
+  }) =>
       _row(
         _icon(icon, fg, bg),
         label,
@@ -486,6 +847,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           onChanged: _saving ? null : onChange,
           activeThumbColor: AppColors.primary,
         ),
+        onTap: onTap,
       );
 
   Widget _navRow(
@@ -503,4 +865,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         Icon(Icons.chevron_right_rounded, color: _secondaryText),
         onTap: onTap,
       );
+}
+
+class _ReminderPreset {
+  final int minutes;
+  final String title;
+  final IconData icon;
+
+  const _ReminderPreset(this.minutes, this.title, this.icon);
+
+  String label(BuildContext context) => context.tr(title);
+
+  String get timeLabel {
+    final hour = minutes ~/ 60;
+    final minute = minutes % 60;
+    return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+  }
 }
