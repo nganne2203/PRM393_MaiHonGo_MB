@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../theme/app_theme.dart';
+import '../../../core/localization/app_localizations.dart';
+import '../../../theme/app_palette.dart';
 import '../../../theme/tokens.dart';
 import '../models/speaking_models.dart';
 
@@ -27,7 +28,7 @@ class SpeakingResultCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
@@ -43,8 +44,8 @@ class SpeakingResultCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  isPending ? 'Queued for AI review' : 'AI Review',
-                  style: AppTextStyles.h3,
+                  context.tr(isPending ? 'Queued for AI review' : 'AI Review'),
+                  style: context.h3,
                 ),
               ),
               Text(
@@ -63,7 +64,7 @@ class SpeakingResultCard extends StatelessWidget {
               label: 'Transcript',
               value: attempt.transcript.isEmpty ? '-' : attempt.transcript),
           const SizedBox(height: 12),
-          Text(attempt.feedback, style: AppTextStyles.body),
+          Text(attempt.feedback, style: context.bodyText),
           if (attempt.correctWords.isNotEmpty ||
               attempt.wrongWords.isNotEmpty) ...[
             const SizedBox(height: 14),
@@ -86,7 +87,7 @@ class SpeakingResultCard extends StatelessWidget {
             child: TextButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
+              label: Text(context.tr('Retry')),
             ),
           ),
         ],
@@ -108,10 +109,10 @@ class _Line extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: AppTextStyles.caption),
+          Text(context.tr(label), style: context.captionText),
           const SizedBox(height: 2),
           Text(value,
-              style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700)),
+              style: context.bodyText.copyWith(fontWeight: FontWeight.w700)),
         ],
       ),
     );

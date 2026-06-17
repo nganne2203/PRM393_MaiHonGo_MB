@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../core/localization/app_localizations.dart';
+import '../theme/app_palette.dart';
 import '../theme/tokens.dart';
 
 class AppBottomNav extends StatelessWidget {
@@ -20,8 +22,8 @@ class AppBottomNav extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.95),
-          border: const Border(top: BorderSide(color: AppColors.line)),
+          color: context.colors.surface.withValues(alpha: 0.95),
+          border: Border(top: BorderSide(color: context.colors.line)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -43,17 +45,17 @@ class AppBottomNav extends StatelessWidget {
                     ),
                     child: Icon(
                       _tabs[i].$1,
-                      color: active ? Colors.white : AppColors.mute,
+                      color: active ? Colors.white : context.colors.mute,
                       size: 20,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _tabs[i].$2,
+                    context.tr(_tabs[i].$2),
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                      color: active ? AppColors.primary : AppColors.mute,
+                      color: active ? AppColors.primary : context.colors.mute,
                     ),
                   ),
                 ],

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/localization/app_localizations.dart';
 import '../core/network/api_client.dart';
 import '../features/progress/models/progress_models.dart';
 import '../features/progress/repositories/progress_repository.dart';
@@ -10,6 +11,7 @@ import '../features/quiz/models/quiz_models.dart';
 import '../features/quiz/repositories/quiz_repository.dart';
 import '../features/vocabulary/models/vocabulary.dart';
 import '../features/vocabulary/state/vocabulary_controller.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 
@@ -201,6 +203,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
   Future<void> _finish() async {
     _timer?.cancel();
+    final completedMessage = context.tr('Quiz completed.');
+    final pickLessonMessage =
+        context.tr('Quiz completed. Pick a lesson to save progress.');
+    final pendingMessage =
+        context.tr('Quiz result saved locally. Pending sync.');
+    final savedMessage = context.tr('Quiz result saved.');
+    final isVietnamese = context.l10n.isVietnamese;
     setState(() => _submitting = true);
     final durationSec = DateTime.now().difference(_startedAt).inSeconds;
     final firstLessonId =
@@ -208,9 +217,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     final lessonId = widget.lessonId ?? firstLessonId;
 
     var pendingSync = false;
-    var message = 'Quiz completed.';
+    var message = completedMessage;
     if (lessonId == null || lessonId.isEmpty) {
-      message = 'Quiz completed. Pick a lesson to save progress.';
+      message = pickLessonMessage;
     } else {
       final submission = QuizSubmission(
         lessonId: lessonId,
@@ -224,9 +233,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       try {
         final result = await _quizRepository.submitQuizResult(submission);
         pendingSync = result.pendingSync;
-        message = pendingSync
-            ? 'Quiz result saved locally. Pending sync.'
-            : 'Quiz result saved.';
+        message = pendingSync ? pendingMessage : savedMessage;
         await _progressRepository.updateProgress(
           ProgressUpdateRequest(
             lessonId: lessonId,
@@ -239,8 +246,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           ),
         );
       } catch (error) {
-        message =
-            'Quiz completed, but result save failed: ${ApiClient.describeError(error)}';
+        final described = ApiClient.describeError(error);
+        message = isVietnamese
+            ? 'Đã hoàn thành quiz, nhưng lưu kết quả thất bại: $described'
+            : 'Quiz completed, but result save failed: $described';
       }
     }
 
@@ -259,22 +268,23 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        backgroundColor: AppColors.bg,
-        body: SafeArea(child: Center(child: CircularProgressIndicator())),
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: const SafeArea(child: Center(child: CircularProgressIndicator())),
       );
     }
     if (_questions.isEmpty) {
       return Scaffold(
-        backgroundColor: AppColors.bg,
-        appBar: AppBar(backgroundColor: AppColors.bg),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar:
+            AppBar(backgroundColor: Theme.of(context).scaffoldBackgroundColor),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
-              _message ?? 'No quiz questions available yet.',
+              context.tr(_message ?? 'No quiz questions available yet.'),
               textAlign: TextAlign.center,
-              style: AppTextStyles.body,
+              style: context.bodyText,
             ),
           ),
         ),
@@ -283,7 +293,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
     final q = _questions[_i];
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -292,8 +302,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               const BackButton(),
               Expanded(
                 child: Center(
-                  child: Text('Question ${_i + 1} / ${_questions.length}',
-                      style: AppTextStyles.body
+                  child: Text(
+                      context.l10n.isVietnamese
+                          ? 'Câu ${_i + 1} / ${_questions.length}'
+                          : 'Question ${_i + 1} / ${_questions.length}',
+                      style: context.bodyText
                           .copyWith(fontWeight: FontWeight.w700)),
                 ),
               ),
@@ -305,7 +318,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               child: LinearProgressIndicator(
                 value: (_i + 1) / _questions.length,
                 minHeight: 8,
-                backgroundColor: AppColors.line,
+                backgroundColor: context.colors.line,
                 valueColor: const AlwaysStoppedAnimation(AppColors.primary),
               ),
             ),
@@ -326,16 +339,16 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   Widget _timerPill() => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.colors.surface,
             borderRadius: BorderRadius.circular(AppRadius.sm)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.timer_outlined, size: 14, color: AppColors.sakura),
           const SizedBox(width: 4),
           Text('${_time}s',
-              style: const TextStyle(
+              style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
-                  color: AppColors.ink)),
+                  color: context.colors.ink)),
         ]),
       );
 
@@ -347,7 +360,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           boxShadow: AppShadows.elevated,
         ),
         child: Column(children: [
-          Text(q.prompt,
+          Text(context.tr(q.prompt),
               style: AppTextStyles.overline.copyWith(color: Colors.white70)),
           const SizedBox(height: 12),
           Text(q.vocabulary.word,
@@ -372,12 +385,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               ? AppColors.matchaSoft
               : isWrong
                   ? AppColors.sakuraSoft
-                  : Colors.white;
+                  : context.colors.surface;
           final border = isCorrect
               ? AppColors.matcha
               : isWrong
                   ? AppColors.sakura
-                  : AppColors.line;
+                  : context.colors.line;
           return GestureDetector(
             onTap: () => _choose(n),
             child: Container(
@@ -389,10 +402,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               ),
               child: Row(children: [
                 Text(String.fromCharCode(65 + n),
-                    style: AppTextStyles.body
-                        .copyWith(fontWeight: FontWeight.w800)),
+                    style:
+                        context.bodyText.copyWith(fontWeight: FontWeight.w800)),
                 const SizedBox(width: 12),
-                Expanded(child: Text(q.options[n], style: AppTextStyles.body)),
+                Expanded(
+                    child: Text(context.tr(q.options[n]),
+                        style: context.bodyText)),
                 if (isCorrect)
                   const Icon(Icons.check_rounded, color: AppColors.matcha),
                 if (isWrong)
@@ -414,8 +429,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         TextField(
           controller: _typingController,
           enabled: !answered,
-          decoration: const InputDecoration(
-            labelText: 'Type the reading',
+          decoration: InputDecoration(
+            labelText: context.tr('Type the reading'),
             hintText: '例: みず',
           ),
           onSubmitted: (_) => _submitTyping(),
@@ -424,13 +439,17 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         FilledButton.icon(
           onPressed: answered ? null : _submitTyping,
           icon: const Icon(Icons.keyboard_return_rounded),
-          label: const Text('Submit'),
+          label: Text(context.tr('Submit')),
         ),
         if (answered) ...[
           const SizedBox(height: 12),
           Text(
-            isCorrect ? 'Correct' : 'Correct answer: ${q.correctAnswer}',
-            style: AppTextStyles.body.copyWith(
+            isCorrect
+                ? context.tr('Correct')
+                : (context.l10n.isVietnamese
+                    ? 'Đáp án đúng: ${q.correctAnswer}'
+                    : 'Correct answer: ${q.correctAnswer}'),
+            style: context.bodyText.copyWith(
               color: isCorrect ? AppColors.matcha : AppColors.sakura,
               fontWeight: FontWeight.w800,
             ),

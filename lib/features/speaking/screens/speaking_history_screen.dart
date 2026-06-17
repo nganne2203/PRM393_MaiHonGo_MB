@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/network/api_client.dart';
-import '../../../theme/app_theme.dart';
+import '../../../theme/app_palette.dart';
 import '../../../theme/tokens.dart';
 import '../models/speaking_models.dart';
 import '../repositories/speaking_repository.dart';
@@ -34,11 +35,11 @@ class _SpeakingHistoryScreenState extends State<SpeakingHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        title: const Text('Speaking History'),
+        title: Text(context.tr('Speaking History')),
       ),
       body: SafeArea(
         child: FutureBuilder<List<SpeakingAttempt>>(
@@ -101,7 +102,7 @@ class _AttemptCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
@@ -123,18 +124,18 @@ class _AttemptCard extends StatelessWidget {
                   attempt.promptText.isEmpty
                       ? attempt.expectedText
                       : attempt.promptText,
-                  style: AppTextStyles.h3,
+                  style: context.h3,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   attempt.feedback,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.caption,
+                  style: context.captionText,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  attempt.status,
+                  context.tr(_statusText(attempt.status)),
                   style: TextStyle(
                     color: scoreColor,
                     fontSize: 12,
@@ -145,7 +146,7 @@ class _AttemptCard extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Replay recording',
+            tooltip: context.tr('Replay recording'),
             icon: const Icon(Icons.play_circle_fill_rounded),
             onPressed:
                 attempt.recordingUrl.isEmpty && attempt.localAudioPath == null
@@ -155,6 +156,11 @@ class _AttemptCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _statusText(String status) {
+    if (status == 'pendingSync') return 'Pending sync';
+    return status;
   }
 }
 
@@ -168,8 +174,8 @@ class _CenteredMessage extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Text(message,
-            textAlign: TextAlign.center, style: AppTextStyles.body),
+        child: Text(context.tr(message),
+            textAlign: TextAlign.center, style: context.bodyText),
       ),
     );
   }

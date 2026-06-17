@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../core/media/audio_cache_service.dart';
 import '../core/media/audio_player_service.dart';
 import '../core/network/api_client.dart';
+import '../core/localization/app_localizations.dart';
+import '../theme/app_palette.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 
@@ -85,7 +87,7 @@ class _FlipFlashcardState extends State<FlipFlashcard>
   Future<void> _playAudio() async {
     final url = widget.audioUrl.trim();
     if (url.isEmpty) {
-      _showAudioMessage('Audio is not available yet.');
+      _showAudioMessage(context.tr('Audio is not available yet.'));
       return;
     }
 
@@ -152,7 +154,7 @@ class _FlipFlashcardState extends State<FlipFlashcard>
         child: Column(
           children: [
             const Spacer(flex: 2),
-            Text('TAP TO FLIP',
+            Text(context.tr('TAP TO FLIP'),
                 style: AppTextStyles.overline.copyWith(color: Colors.white70)),
             const SizedBox(height: 16),
             Expanded(
@@ -200,7 +202,7 @@ class _FlipFlashcardState extends State<FlipFlashcard>
                 borderRadius: BorderRadius.circular(999),
               ),
               child: IconButton(
-                tooltip: 'Play audio',
+                tooltip: context.tr('Play audio'),
                 onPressed: _playAudio,
                 icon: const Icon(Icons.volume_up_rounded,
                     color: Colors.white, size: 20),
@@ -214,7 +216,7 @@ class _FlipFlashcardState extends State<FlipFlashcard>
   Widget _back() => Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(AppRadius.xxl),
           boxShadow: AppShadows.elevated,
         ),
@@ -226,17 +228,17 @@ class _FlipFlashcardState extends State<FlipFlashcard>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('MEANING', style: AppTextStyles.overline),
+                    Text(context.tr('MEANING'), style: context.overlineText),
                     const SizedBox(height: 12),
                     Text(
                       widget.meaning,
-                      style: AppTextStyles.h1.copyWith(fontSize: 30),
+                      style: context.h1.copyWith(fontSize: 30),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       widget.romaji,
-                      style: AppTextStyles.caption,
+                      style: context.captionText,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
@@ -244,7 +246,7 @@ class _FlipFlashcardState extends State<FlipFlashcard>
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.bg,
+                        color: context.colors.input,
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                       ),
                       child: Column(
@@ -252,10 +254,11 @@ class _FlipFlashcardState extends State<FlipFlashcard>
                         children: [
                           Text(
                             widget.example,
-                            style: AppTextStyles.jp(16, w: FontWeight.w600),
+                            style: AppTextStyles.jp(16,
+                                color: context.colors.ink, w: FontWeight.w600),
                           ),
                           const SizedBox(height: 4),
-                          Text(widget.exampleTr, style: AppTextStyles.caption),
+                          Text(widget.exampleTr, style: context.captionText),
                         ],
                       ),
                     ),

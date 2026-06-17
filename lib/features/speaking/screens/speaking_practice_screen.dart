@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../lessons/models/lesson.dart';
 import '../../lessons/repositories/lesson_repository.dart';
+import '../../../theme/app_palette.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/tokens.dart';
 import '../state/speaking_controller.dart';
@@ -61,25 +63,25 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
         widget.lessonTitle ??
         _controller.state.selectedLessonName;
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Speaking Practice'),
+            Text(context.tr('Speaking Practice')),
             if (title?.isNotEmpty == true)
               Text(
                 title!,
-                style: AppTextStyles.caption,
+                style: context.captionText,
                 overflow: TextOverflow.ellipsis,
               ),
           ],
         ),
         actions: [
           IconButton(
-            tooltip: 'History',
+            tooltip: context.tr('History'),
             icon: const Icon(Icons.history_rounded),
             onPressed: () => Navigator.push(
               context,
@@ -116,40 +118,43 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Lesson', style: AppTextStyles.caption),
+          Text(context.tr('Lesson'), style: context.captionText),
           const SizedBox(height: 8),
           if (locked)
             Text(
-              title?.isNotEmpty == true ? title! : 'Current lesson',
-              style: AppTextStyles.h3,
+              title?.isNotEmpty == true ? title! : context.tr('Current lesson'),
+              style: context.h3,
               overflow: TextOverflow.ellipsis,
             )
           else if (_loadingLessons)
             const LinearProgressIndicator(minHeight: 4)
           else if (_lessons.isEmpty)
             Text(
-              _lessonMessage ?? 'Select a lesson to start speaking practice.',
-              style: AppTextStyles.body,
+              context.tr(_lessonMessage ??
+                  'Select a lesson to start speaking practice.'),
+              style: context.bodyText,
             )
           else
             DropdownButtonFormField<String>(
               initialValue: _selectedLesson?.id,
-              decoration: const InputDecoration(
-                labelText: 'Select Lesson',
+              decoration: InputDecoration(
+                labelText: context.tr('Select Lesson'),
               ),
               items: [
                 for (final lesson in _lessons)
                   DropdownMenuItem(
                     value: lesson.id,
                     child: Text(
-                      lesson.title.isEmpty ? 'Untitled lesson' : lesson.title,
+                      lesson.title.isEmpty
+                          ? context.tr('Untitled lesson')
+                          : lesson.title,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -166,7 +171,8 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
           if (_lessonMessage != null && !_loadingLessons && _lessons.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text(_lessonMessage!, style: AppTextStyles.caption),
+              child:
+                  Text(context.tr(_lessonMessage!), style: context.captionText),
             ),
         ],
       ),
@@ -209,7 +215,9 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Prompt ${state.selectedIndex + 1} of ${state.prompts.length}',
+            context.l10n.isVietnamese
+                ? 'Prompt ${state.selectedIndex + 1} / ${state.prompts.length}'
+                : 'Prompt ${state.selectedIndex + 1} of ${state.prompts.length}',
             style: const TextStyle(
               color: Colors.white70,
               fontSize: 12,
@@ -248,7 +256,7 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
                     ? null
                     : () => _controller.selectPrompt(state.selectedIndex - 1),
                 icon: const Icon(Icons.chevron_left_rounded),
-                label: const Text('Previous'),
+                label: Text(context.tr('Previous')),
               ),
               const Spacer(),
               OutlinedButton.icon(
@@ -260,7 +268,7 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
                     ? null
                     : () => _controller.selectPrompt(state.selectedIndex + 1),
                 icon: const Icon(Icons.chevron_right_rounded),
-                label: const Text('Next'),
+                label: Text(context.tr('Next')),
               ),
             ],
           ),
@@ -277,7 +285,7 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
@@ -297,7 +305,8 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
                     ? _controller.stopRecording
                     : _controller.startRecording,
             icon: Icon(isRecording ? Icons.stop_rounded : Icons.mic_rounded),
-            label: Text(isRecording ? 'Stop recording' : 'Start recording'),
+            label: Text(
+                context.tr(isRecording ? 'Stop recording' : 'Start recording')),
           ),
           const SizedBox(height: 10),
           Row(
@@ -308,7 +317,7 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
                       ? _controller.previewRecording
                       : null,
                   icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text('Preview'),
+                  label: Text(context.tr('Preview')),
                 ),
               ),
               const SizedBox(width: 10),
@@ -326,7 +335,8 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.cloud_upload_rounded),
-                  label: Text(isSubmitting ? 'Evaluating' : 'Submit'),
+                  label:
+                      Text(context.tr(isSubmitting ? 'Evaluating' : 'Submit')),
                 ),
               ),
             ],
@@ -347,9 +357,9 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Text(
-        state.message!,
+        context.tr(state.message!),
         style: TextStyle(
-          color: isError ? AppColors.sakura : AppColors.ink,
+          color: isError ? AppColors.sakura : context.colors.ink,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -359,15 +369,16 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
   Widget _emptyCard(SpeakingState state) => Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           boxShadow: AppShadows.card,
         ),
         child: Text(
           state.selectedLessonId == null
-              ? 'Select a lesson to start speaking practice.'
-              : 'No speaking exercises are available for this lesson yet.',
-          style: AppTextStyles.body,
+              ? context.tr('Select a lesson to start speaking practice.')
+              : context.tr(
+                  'No speaking exercises are available for this lesson yet.'),
+          style: context.bodyText,
         ),
       );
 

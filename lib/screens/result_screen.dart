@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
+import '../core/localization/app_localizations.dart';
+import '../theme/app_palette.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 import '../widgets/primary_button.dart';
@@ -35,9 +37,10 @@ class _ResultScreenState extends State<ResultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final accuracy = ((widget.score / widget.total) * 100).round();
+    final accuracy =
+        widget.total == 0 ? 0 : ((widget.score / widget.total) * 100).round();
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(children: [
         ListView(padding: EdgeInsets.zero, children: [
           Container(
@@ -58,17 +61,19 @@ class _ResultScreenState extends State<ResultScreen> {
                   child: const Text('🏆', style: TextStyle(fontSize: 50)),
                 ),
                 const SizedBox(height: 20),
-                Text('Excellent!',
+                Text(context.tr('Excellent!'),
                     style: AppTextStyles.h1
                         .copyWith(color: Colors.white, fontSize: 26)),
                 const SizedBox(height: 4),
-                Text("You've completed the quiz",
+                Text(context.tr("You've completed the quiz"),
                     style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.8),
                         fontSize: 13)),
                 const SizedBox(height: 8),
                 Text(
-                  widget.pendingSync ? 'Pending sync' : widget.message,
+                  widget.pendingSync
+                      ? context.tr('Pending sync')
+                      : context.tr(widget.message),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.85),
@@ -86,12 +91,12 @@ class _ResultScreenState extends State<ResultScreen> {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.colors.surface,
                   borderRadius: BorderRadius.circular(AppRadius.xl),
                   boxShadow: AppShadows.elevated,
                 ),
                 child: Column(children: [
-                  Text('YOUR SCORE', style: AppTextStyles.overline),
+                  Text(context.tr('YOUR SCORE'), style: context.overlineText),
                   const SizedBox(height: 8),
                   ShaderMask(
                     shaderCallback: (r) => AppGradients.primary.createShader(r),
@@ -103,12 +108,13 @@ class _ResultScreenState extends State<ResultScreen> {
                   ),
                   const SizedBox(height: 16),
                   Row(children: [
-                    _stat('🎯', '$accuracy%', 'Accuracy', AppColors.sakuraSoft),
+                    _stat(context, '🎯', '$accuracy%', 'Accuracy',
+                        AppColors.sakuraSoft),
                     const SizedBox(width: 8),
-                    _stat('⚡', '+${widget.score * 15}', 'XP earned',
+                    _stat(context, '⚡', '+${widget.score * 15}', 'XP earned',
                         AppColors.primarySoft),
                     const SizedBox(width: 8),
-                    _stat('🏅', '3', 'Badges', AppColors.matchaSoft),
+                    _stat(context, '🏅', '3', 'Badges', AppColors.matchaSoft),
                   ]),
                 ]),
               ),
@@ -118,11 +124,13 @@ class _ResultScreenState extends State<ResultScreen> {
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
             child: Row(children: [
               Expanded(
-                  child: GhostButton(label: '↻ Retry', onTap: widget.onRetry)),
+                  child: GhostButton(
+                      label: '↻ ${context.tr('Retry')}',
+                      onTap: widget.onRetry)),
               const SizedBox(width: 12),
               Expanded(
                   child: PrimaryButton(
-                      label: 'Continue',
+                      label: context.tr('Continue'),
                       trailingIcon: Icons.arrow_forward_rounded,
                       onTap: widget.onContinue)),
             ]),
@@ -146,7 +154,9 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
-  Widget _stat(String emoji, String value, String label, Color bg) => Expanded(
+  Widget _stat(BuildContext context, String emoji, String value, String label,
+          Color bg) =>
+      Expanded(
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -157,8 +167,8 @@ class _ResultScreenState extends State<ResultScreen> {
             Text(value,
                 style:
                     const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-            Text(label,
-                style: const TextStyle(color: AppColors.mute, fontSize: 10)),
+            Text(context.tr(label),
+                style: TextStyle(color: context.colors.mute, fontSize: 10)),
           ]),
         ),
       );
