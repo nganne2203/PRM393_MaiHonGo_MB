@@ -19,7 +19,7 @@ Owner: Member 5
 
 - `flutter analyze`: passed, no issues found.
 - `flutter test`: passed, all tests passed. Targeted Member 5 coverage includes shared state widgets, bookmark cache fallback, settings/onboarding persistence, and editable profile preferences.
-- Known tooling warning: Flutter reports that `isar_flutter_libs` and `flutter_secure_storage` do not yet support Swift Package Manager for Apple targets. This is a dependency warning, not a current analyzer or test failure.
+- Local offline content now uses SQLite through `sqflite`/`sqflite_common_ffi`; no Isar generator or Isar native library setup is required for QA.
 
 ## Current Bug Log
 

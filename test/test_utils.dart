@@ -1,15 +1,11 @@
 import 'dart:convert';
-import 'dart:ffi';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:maihongo/core/network/api_client.dart';
 import 'package:maihongo/core/storage/local_database_service.dart';
-import 'package:maihongo/core/storage/local_models.dart';
 import 'package:maihongo/core/storage/token_storage.dart';
-import 'package:isar/isar.dart';
-
-bool _isarInitialized = false;
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class MemoryTokenStorage extends TokenStorage {
   String? accessToken;
@@ -80,34 +76,11 @@ ResponseBody jsonResponse(Object data, {int statusCode = 200}) {
 }
 
 Future<LocalDatabaseService> openTestDatabase(String name) async {
-  if (!_isarInitialized) {
-    await Isar.initializeIsarCore(
-      libraries: {Abi.current(): _isarCoreLibraryPath()},
-    );
-    _isarInitialized = true;
-  }
+  sqfliteFfiInit();
   final directory = await Directory.systemTemp.createTemp(name);
-  final isar = await Isar.open(
-    [
-      LocalLessonSchema,
-      LocalVocabularySchema,
-      LocalBookmarkSchema,
-      LocalContentPackageSchema,
-      LocalFlashcardSessionResultSchema,
-    ],
+  return LocalDatabaseService.open(
     directory: directory.path,
+    databaseFactory: databaseFactoryFfi,
     name: name,
   );
-  return LocalDatabaseService.fromIsar(isar);
-}
-
-String _isarCoreLibraryPath() {
-  final pubCache = Platform.environment['PUB_CACHE'] ??
-      '${Platform.environment['HOME']}/.pub-cache';
-  final packageDir =
-      '$pubCache/hosted/pub.dev/isar_flutter_libs-${Isar.version}';
-  if (Platform.isMacOS) return '$packageDir/macos/libisar.dylib';
-  if (Platform.isLinux) return '$packageDir/linux/libisar.so';
-  if (Platform.isWindows) return '$packageDir/windows/isar.dll';
-  return '';
 }

@@ -52,7 +52,10 @@ class SpeakingAttempt {
   final String expectedText;
   final int similarityScore;
   final int pronunciationScore;
+  final int fluencyScore;
+  final int grammarScore;
   final String feedback;
+  final List<String> suggestions;
   final List<String> correctWords;
   final List<String> wrongWords;
   final String status;
@@ -70,7 +73,10 @@ class SpeakingAttempt {
     required this.expectedText,
     required this.similarityScore,
     required this.pronunciationScore,
+    required this.fluencyScore,
+    required this.grammarScore,
     required this.feedback,
+    required this.suggestions,
     required this.correctWords,
     required this.wrongWords,
     required this.status,
@@ -92,7 +98,10 @@ class SpeakingAttempt {
       expectedText: json['expectedText']?.toString() ?? '',
       similarityScore: _toInt(json['similarityScore'] ?? json['score']),
       pronunciationScore: _toInt(json['pronunciationScore'] ?? json['score']),
+      fluencyScore: _toInt(json['fluencyScore'] ?? json['score']),
+      grammarScore: _toInt(json['grammarScore'] ?? json['score']),
       feedback: json['feedback']?.toString() ?? '',
+      suggestions: _toStringList(json['suggestions']),
       correctWords: _toStringList(json['correctWords']),
       wrongWords: _toStringList(json['wrongWords']),
       status: json['status']?.toString() ?? 'pending',
@@ -113,8 +122,11 @@ class SpeakingAttempt {
         expectedText: '',
         similarityScore: 0,
         pronunciationScore: 0,
+        fluencyScore: 0,
+        grammarScore: 0,
         feedback:
             'Your speaking attempt will be evaluated when you are online.',
+        suggestions: const [],
         correctWords: const [],
         wrongWords: const [],
         status: 'pendingSync',

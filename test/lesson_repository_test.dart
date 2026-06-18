@@ -33,7 +33,7 @@ void main() {
   test('LessonRepository falls back to cached lessons when API fails',
       () async {
     final database = await openTestDatabase('lesson_repo_test');
-    addTearDown(() => database.isar.close(deleteFromDisk: true));
+    addTearDown(() => database.close(deleteFromDisk: true));
     await database.saveLessons([
       const Lesson(
         id: 'lesson-1',

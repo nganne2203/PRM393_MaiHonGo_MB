@@ -1,61 +1,187 @@
 import 'dart:convert';
+import 'dart:io';
 
-import 'package:isar/isar.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../features/bookmarks/models/bookmark.dart';
-import '../../features/lessons/models/lesson.dart';
 import '../../features/flashcards/models/flashcard_session.dart';
+import '../../features/lessons/models/lesson.dart';
 import '../../features/vocabulary/models/vocabulary.dart';
 import 'local_models.dart';
 
 class LocalDatabaseService {
-  final Isar isar;
+  static const _databaseName = 'maihongo_local.db';
+  static const _databaseVersion = 1;
 
-  const LocalDatabaseService._(this.isar);
+  final Database database;
+  final String? path;
 
-  static Future<LocalDatabaseService> open({String? directory}) async {
-    final dir = directory ?? (await getApplicationDocumentsDirectory()).path;
-    final isar = await Isar.open(
-      [
-        LocalLessonSchema,
-        LocalVocabularySchema,
-        LocalBookmarkSchema,
-        LocalContentPackageSchema,
-        LocalFlashcardSessionResultSchema,
-      ],
-      directory: dir,
+  const LocalDatabaseService._(this.database, {this.path});
+
+  static Future<LocalDatabaseService> open({
+    String? directory,
+    DatabaseFactory? databaseFactory,
+    String name = _databaseName,
+  }) async {
+    final factory = databaseFactory ?? _defaultDatabaseFactory();
+    final baseDir = directory ?? (await getApplicationSupportDirectory()).path;
+    await Directory(baseDir).create(recursive: true);
+    final dbPath = p.join(baseDir, name);
+    final options = OpenDatabaseOptions(
+      version: _databaseVersion,
+      onCreate: (db, version) => _createSchema(db),
     );
-    return LocalDatabaseService._(isar);
+    final database = await _openDatabaseWithRecovery(factory, dbPath, options);
+    return LocalDatabaseService._(database, path: dbPath);
   }
 
-  static LocalDatabaseService fromIsar(Isar isar) =>
-      LocalDatabaseService._(isar);
+  static Future<Database> _openDatabaseWithRecovery(
+    DatabaseFactory factory,
+    String dbPath,
+    OpenDatabaseOptions options,
+  ) async {
+    try {
+      return await factory.openDatabase(dbPath, options: options);
+    } catch (error) {
+      final message = error.toString().toLowerCase();
+      final recoverable = message.contains('authorization denied') ||
+          message.contains('disk i/o') ||
+          message.contains('unable to open database file') ||
+          message.contains('database is locked') ||
+          message.contains('not a database');
+      if (!recoverable) rethrow;
+
+      final file = File(dbPath);
+      if (await file.exists()) {
+        final backupPath =
+            '$dbPath.broken-${DateTime.now().millisecondsSinceEpoch}';
+        await file.rename(backupPath);
+      }
+      return factory.openDatabase(dbPath, options: options);
+    }
+  }
+
+  static Future<void> _createSchema(Database db) async {
+    await db.execute('''
+      CREATE TABLE lessons (
+        server_id TEXT PRIMARY KEY,
+        title TEXT NOT NULL DEFAULT '',
+        category TEXT NOT NULL DEFAULT '',
+        description TEXT NOT NULL DEFAULT '',
+        is_offline_ready INTEGER NOT NULL DEFAULT 0,
+        version INTEGER NOT NULL DEFAULT 1,
+        downloaded INTEGER NOT NULL DEFAULT 0,
+        last_synced_at TEXT NOT NULL,
+        vocab_ids_json TEXT NOT NULL DEFAULT '[]',
+        size INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE vocabulary (
+        server_id TEXT PRIMARY KEY,
+        word TEXT NOT NULL DEFAULT '',
+        hiragana TEXT NOT NULL DEFAULT '',
+        meaning_vi TEXT NOT NULL DEFAULT '',
+        tags_json TEXT NOT NULL DEFAULT '[]',
+        examples_json TEXT NOT NULL DEFAULT '[]',
+        lesson_id TEXT NOT NULL DEFAULT '',
+        romaji TEXT NOT NULL DEFAULT '',
+        audio_url TEXT NOT NULL DEFAULT '',
+        last_synced_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX idx_vocabulary_lesson_id ON vocabulary(lesson_id)',
+    );
+    await db.execute('''
+      CREATE TABLE bookmarks (
+        vocab_id TEXT PRIMARY KEY,
+        server_id TEXT NOT NULL DEFAULT '',
+        word TEXT NOT NULL DEFAULT '',
+        hiragana TEXT NOT NULL DEFAULT '',
+        meaning_vi TEXT NOT NULL DEFAULT '',
+        romaji TEXT NOT NULL DEFAULT '',
+        audio_url TEXT NOT NULL DEFAULT '',
+        tags_json TEXT NOT NULL DEFAULT '[]',
+        examples_json TEXT NOT NULL DEFAULT '[]',
+        created_at TEXT,
+        last_synced_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE content_packages (
+        lesson_id TEXT PRIMARY KEY,
+        version INTEGER NOT NULL DEFAULT 1,
+        size INTEGER NOT NULL DEFAULT 0,
+        downloaded_at TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'downloaded'
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE flashcard_session_results (
+        completed_at TEXT PRIMARY KEY,
+        lesson_id TEXT NOT NULL DEFAULT '',
+        total_cards INTEGER NOT NULL DEFAULT 0,
+        learned_count INTEGER NOT NULL DEFAULT 0,
+        not_learned_count INTEGER NOT NULL DEFAULT 0,
+        accuracy INTEGER NOT NULL DEFAULT 0,
+        learned_vocabulary_ids_json TEXT NOT NULL DEFAULT '[]',
+        not_learned_vocabulary_ids_json TEXT NOT NULL DEFAULT '[]',
+        synced INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+  }
+
+  static DatabaseFactory _defaultDatabaseFactory() {
+    if (Platform.isAndroid || Platform.isIOS) {
+      return sqflite.databaseFactory;
+    }
+    sqfliteFfiInit();
+    return databaseFactoryFfi;
+  }
+
+  Future<void> close({bool deleteFromDisk = false}) async {
+    final dbPath = path;
+    await database.close();
+    if (deleteFromDisk && dbPath != null) {
+      final file = File(dbPath);
+      if (await file.exists()) await file.delete();
+    }
+  }
 
   Future<void> saveLessons(List<Lesson> lessons) async {
-    final existing = {
-      for (final item in await isar.localLessons.where().findAll())
-        item.serverId: item,
-    };
     final now = DateTime.now();
-
-    await isar.writeTxn(() async {
+    await database.transaction((txn) async {
       for (final lesson in lessons) {
         if (lesson.id.isEmpty) continue;
-        final current = existing[lesson.id];
-        final local = LocalLesson()
-          ..id = current?.id ?? Isar.autoIncrement
-          ..serverId = lesson.id
-          ..title = lesson.title
-          ..category = lesson.category
-          ..description = lesson.description
-          ..isOfflineReady = lesson.isOfflineReady
-          ..version = lesson.version
-          ..downloaded = lesson.downloaded || (current?.downloaded ?? false)
-          ..lastSyncedAt = now
-          ..vocabIds = lesson.vocabIds
-          ..size = lesson.size;
-        await isar.localLessons.put(local);
+        final current = await txn.query(
+          'lessons',
+          columns: ['downloaded'],
+          where: 'server_id = ?',
+          whereArgs: [lesson.id],
+          limit: 1,
+        );
+        final wasDownloaded =
+            current.isNotEmpty && _boolFromDb(current.first['downloaded']);
+        await txn.insert(
+          'lessons',
+          {
+            'server_id': lesson.id,
+            'title': lesson.title,
+            'category': lesson.category,
+            'description': lesson.description,
+            'is_offline_ready': _boolToDb(lesson.isOfflineReady),
+            'version': lesson.version,
+            'downloaded': _boolToDb(lesson.downloaded || wasDownloaded),
+            'last_synced_at': now.toIso8601String(),
+            'vocab_ids_json': jsonEncode(lesson.vocabIds),
+            'size': lesson.size,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
       }
     });
   }
@@ -64,93 +190,105 @@ class LocalDatabaseService {
     List<Vocabulary> vocabulary, {
     String? lessonId,
   }) async {
-    final existing = {
-      for (final item in await isar.localVocabularys.where().findAll())
-        item.serverId: item,
-    };
     final now = DateTime.now();
-
-    await isar.writeTxn(() async {
+    await database.transaction((txn) async {
       for (final vocab in vocabulary) {
         if (vocab.id.isEmpty) continue;
-        final current = existing[vocab.id];
-        final examples = vocab.examples
-            .map((example) => jsonEncode(example.toJson()))
-            .toList();
-        final local = LocalVocabulary()
-          ..id = current?.id ?? Isar.autoIncrement
-          ..serverId = vocab.id
-          ..word = vocab.word
-          ..hiragana = vocab.hiragana
-          ..meaningVi = vocab.meaningVi
-          ..tags = vocab.tags
-          ..examples = examples
-          ..lessonId = lessonId ?? vocab.lessonId ?? current?.lessonId ?? ''
-          ..romaji = vocab.romaji
-          ..lastSyncedAt = now;
-        await isar.localVocabularys.put(local);
+        final current = await txn.query(
+          'vocabulary',
+          columns: ['lesson_id'],
+          where: 'server_id = ?',
+          whereArgs: [vocab.id],
+          limit: 1,
+        );
+        final currentLessonId =
+            current.isEmpty ? '' : current.first['lesson_id']?.toString() ?? '';
+        await txn.insert(
+          'vocabulary',
+          {
+            'server_id': vocab.id,
+            'word': vocab.word,
+            'hiragana': vocab.hiragana,
+            'meaning_vi': vocab.meaningVi,
+            'tags_json': jsonEncode(vocab.tags),
+            'examples_json': jsonEncode(
+              vocab.examples.map((item) => item.toJson()).toList(),
+            ),
+            'lesson_id': lessonId ?? vocab.lessonId ?? currentLessonId,
+            'romaji': vocab.romaji,
+            'audio_url': vocab.audioUrl,
+            'last_synced_at': now.toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
       }
     });
   }
 
   Future<List<Lesson>> getLessons() async {
-    final lessons = await isar.localLessons.where().findAll();
-    lessons.sort((a, b) => (a.title ?? '').compareTo(b.title ?? ''));
-    return lessons.map(_lessonFromLocal).toList();
+    final rows = await database.query('lessons', orderBy: 'title ASC');
+    return rows.map(_lessonFromRow).toList();
   }
 
   Future<Lesson?> getLesson(String lessonId) async {
-    final lessons = await getLessons();
-    for (final lesson in lessons) {
-      if (lesson.id == lessonId) return lesson;
-    }
-    return null;
+    final rows = await database.query(
+      'lessons',
+      where: 'server_id = ?',
+      whereArgs: [lessonId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return _lessonFromRow(rows.first);
   }
 
   Future<List<Vocabulary>> getVocabulary({String? lessonId}) async {
-    final vocabulary = await isar.localVocabularys.where().findAll();
-    final filtered = lessonId == null
-        ? vocabulary
-        : vocabulary.where((item) => item.lessonId == lessonId).toList();
-    filtered.sort((a, b) => (a.word ?? '').compareTo(b.word ?? ''));
-    return filtered.map(_vocabularyFromLocal).toList();
+    final rows = await database.query(
+      'vocabulary',
+      where: lessonId == null ? null : 'lesson_id = ?',
+      whereArgs: lessonId == null ? null : [lessonId],
+      orderBy: 'word ASC',
+    );
+    return rows.map(_vocabularyFromRow).toList();
   }
 
   Future<List<Vocabulary>> getVocabularyByIds(List<String> ids) async {
     if (ids.isEmpty) return const [];
-    final idSet = ids.toSet();
-    final vocabulary = await isar.localVocabularys.where().findAll();
-    return vocabulary
-        .where((item) => idSet.contains(item.serverId))
-        .map(_vocabularyFromLocal)
-        .toList();
+    final placeholders = List.filled(ids.length, '?').join(', ');
+    final rows = await database.query(
+      'vocabulary',
+      where: 'server_id IN ($placeholders)',
+      whereArgs: ids,
+      orderBy: 'word ASC',
+    );
+    return rows.map(_vocabularyFromRow).toList();
   }
 
   Future<void> saveBookmarks(List<Bookmark> bookmarks) async {
-    final existing = {
-      for (final item in await isar.localBookmarks.where().findAll())
-        item.vocabId: item,
-    };
     final incomingIds = bookmarks
         .map((bookmark) => bookmark.vocabId)
         .where((id) => id.isNotEmpty)
         .toSet();
     final now = DateTime.now();
-
-    await isar.writeTxn(() async {
+    await database.transaction((txn) async {
       for (final bookmark in bookmarks) {
         if (bookmark.vocabId.isEmpty) continue;
-        await isar.localBookmarks.put(
-          _bookmarkToLocal(
-            bookmark,
-            existing: existing[bookmark.vocabId],
-            lastSyncedAt: now,
-          ),
+        final existing = await _bookmarkRow(bookmark.vocabId, txn: txn);
+        await txn.insert(
+          'bookmarks',
+          _bookmarkToRow(bookmark, existing: existing, lastSyncedAt: now),
+          conflictAlgorithm: ConflictAlgorithm.replace,
         );
       }
-      for (final local in existing.values) {
-        if (!incomingIds.contains(local.vocabId)) {
-          await isar.localBookmarks.delete(local.id);
+
+      final existingRows = await txn.query('bookmarks', columns: ['vocab_id']);
+      for (final row in existingRows) {
+        final vocabId = row['vocab_id']?.toString() ?? '';
+        if (!incomingIds.contains(vocabId)) {
+          await txn.delete(
+            'bookmarks',
+            where: 'vocab_id = ?',
+            whereArgs: [vocabId],
+          );
         }
       }
     });
@@ -158,44 +296,38 @@ class LocalDatabaseService {
 
   Future<void> saveBookmark(Bookmark bookmark) async {
     if (bookmark.vocabId.isEmpty) return;
-    final existing = await isar.localBookmarks
-        .where()
-        .vocabIdEqualTo(bookmark.vocabId)
-        .findFirst();
-    final local = _bookmarkToLocal(
-      bookmark,
-      existing: existing,
-      lastSyncedAt: DateTime.now(),
+    final existing = await _bookmarkRow(bookmark.vocabId);
+    await database.insert(
+      'bookmarks',
+      _bookmarkToRow(
+        bookmark,
+        existing: existing,
+        lastSyncedAt: DateTime.now(),
+      ),
+      conflictAlgorithm: ConflictAlgorithm.replace,
     );
-
-    await isar.writeTxn(() async {
-      await isar.localBookmarks.put(local);
-    });
   }
 
-  Future<void> removeBookmark(String vocabId) async {
-    final bookmark =
-        await isar.localBookmarks.where().vocabIdEqualTo(vocabId).findFirst();
-    if (bookmark == null) return;
-    await isar.writeTxn(() async {
-      await isar.localBookmarks.delete(bookmark.id);
-    });
+  Future<void> removeBookmark(String vocabId) {
+    return database.delete(
+      'bookmarks',
+      where: 'vocab_id = ?',
+      whereArgs: [vocabId],
+    );
   }
 
   Future<List<Bookmark>> getBookmarks() async {
-    final bookmarks = await isar.localBookmarks.where().findAll();
-    bookmarks.sort((a, b) {
-      final aDate = a.createdAt ?? a.lastSyncedAt;
-      final bDate = b.createdAt ?? b.lastSyncedAt;
-      return bDate.compareTo(aDate);
-    });
-    return bookmarks.map(_bookmarkFromLocal).toList();
+    final rows = await database.query(
+      'bookmarks',
+      orderBy: 'COALESCE(created_at, last_synced_at) DESC',
+    );
+    return rows.map(_bookmarkFromRow).toList();
   }
 
   Future<Set<String>> getBookmarkedVocabIds() async {
-    final bookmarks = await isar.localBookmarks.where().findAll();
-    return bookmarks
-        .map((bookmark) => bookmark.vocabId)
+    final rows = await database.query('bookmarks', columns: ['vocab_id']);
+    return rows
+        .map((row) => row['vocab_id']?.toString() ?? '')
         .where((id) => id.isNotEmpty)
         .toSet();
   }
@@ -205,211 +337,287 @@ class LocalDatabaseService {
     int? size,
     String status = 'downloaded',
   }) async {
-    final lessons = await isar.localLessons.where().findAll();
-    final current =
-        lessons.where((item) => item.serverId == lesson.id).firstOrNull;
-
-    await isar.writeTxn(() async {
-      final local = LocalLesson()
-        ..id = current?.id ?? Isar.autoIncrement
-        ..serverId = lesson.id
-        ..title = lesson.title
-        ..category = lesson.category
-        ..description = lesson.description
-        ..isOfflineReady = lesson.isOfflineReady
-        ..version = lesson.version
-        ..downloaded = true
-        ..lastSyncedAt = DateTime.now()
-        ..vocabIds = lesson.vocabIds
-        ..size = size ?? lesson.size;
-      await isar.localLessons.put(local);
-
-      final packages = await isar.localContentPackages.where().findAll();
-      final currentPackage =
-          packages.where((item) => item.lessonId == lesson.id).firstOrNull;
-      final contentPackage = LocalContentPackage()
-        ..id = currentPackage?.id ?? Isar.autoIncrement
-        ..lessonId = lesson.id
-        ..version = lesson.version
-        ..size = size ?? lesson.size
-        ..downloadedAt = DateTime.now()
-        ..status = status;
-      await isar.localContentPackages.put(contentPackage);
+    final now = DateTime.now();
+    await database.transaction((txn) async {
+      await txn.insert(
+        'lessons',
+        {
+          'server_id': lesson.id,
+          'title': lesson.title,
+          'category': lesson.category,
+          'description': lesson.description,
+          'is_offline_ready': _boolToDb(lesson.isOfflineReady),
+          'version': lesson.version,
+          'downloaded': 1,
+          'last_synced_at': now.toIso8601String(),
+          'vocab_ids_json': jsonEncode(lesson.vocabIds),
+          'size': size ?? lesson.size,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      await txn.insert(
+        'content_packages',
+        {
+          'lesson_id': lesson.id,
+          'version': lesson.version,
+          'size': size ?? lesson.size,
+          'downloaded_at': now.toIso8601String(),
+          'status': status,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     });
   }
 
   Future<void> removeDownloaded(String lessonId) async {
-    final lessons = await isar.localLessons.where().findAll();
-    final packages = await isar.localContentPackages.where().findAll();
-    final lesson =
-        lessons.where((item) => item.serverId == lessonId).firstOrNull;
-    final package =
-        packages.where((item) => item.lessonId == lessonId).firstOrNull;
-
-    await isar.writeTxn(() async {
-      if (lesson != null) {
-        lesson.downloaded = false;
-        await isar.localLessons.put(lesson);
-      }
-      if (package != null) {
-        await isar.localContentPackages.delete(package.id);
-      }
+    await database.transaction((txn) async {
+      await txn.update(
+        'lessons',
+        {'downloaded': 0},
+        where: 'server_id = ?',
+        whereArgs: [lessonId],
+      );
+      await txn.delete(
+        'content_packages',
+        where: 'lesson_id = ?',
+        whereArgs: [lessonId],
+      );
     });
   }
 
   Future<List<LocalContentPackage>> getContentPackages() async {
-    final packages = await isar.localContentPackages.where().findAll();
-    packages.sort((a, b) => b.downloadedAt.compareTo(a.downloadedAt));
-    return packages;
+    final rows = await database.query(
+      'content_packages',
+      orderBy: 'downloaded_at DESC',
+    );
+    return rows.map(_contentPackageFromRow).toList();
   }
 
   Future<void> saveFlashcardSessionResult(
     FlashcardSessionResult result,
-  ) async {
-    final existing = await isar.localFlashcardSessionResults
-        .where()
-        .completedAtEqualTo(result.completedAt)
-        .findFirst();
-
-    final local = LocalFlashcardSessionResult()
-      ..id = existing?.id ?? Isar.autoIncrement
-      ..lessonId = result.lessonId
-      ..totalCards = result.totalCards
-      ..learnedCount = result.learnedCount
-      ..notLearnedCount = result.notLearnedCount
-      ..accuracy = result.accuracy
-      ..learnedVocabularyIds = result.learnedVocabularyIds
-      ..notLearnedVocabularyIds = result.notLearnedVocabularyIds
-      ..completedAt = result.completedAt
-      ..synced = result.synced;
-
-    await isar.writeTxn(() async {
-      await isar.localFlashcardSessionResults.put(local);
-    });
+  ) {
+    return database.insert(
+      'flashcard_session_results',
+      {
+        'completed_at': result.completedAt.toIso8601String(),
+        'lesson_id': result.lessonId,
+        'total_cards': result.totalCards,
+        'learned_count': result.learnedCount,
+        'not_learned_count': result.notLearnedCount,
+        'accuracy': result.accuracy,
+        'learned_vocabulary_ids_json': jsonEncode(result.learnedVocabularyIds),
+        'not_learned_vocabulary_ids_json':
+            jsonEncode(result.notLearnedVocabularyIds),
+        'synced': _boolToDb(result.synced),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
-  Future<void> markFlashcardSessionSynced(DateTime completedAt) async {
-    final result = await isar.localFlashcardSessionResults
-        .where()
-        .completedAtEqualTo(completedAt)
-        .findFirst();
-    if (result == null) return;
-
-    await isar.writeTxn(() async {
-      result.synced = true;
-      await isar.localFlashcardSessionResults.put(result);
-    });
+  Future<void> markFlashcardSessionSynced(DateTime completedAt) {
+    return database.update(
+      'flashcard_session_results',
+      {'synced': 1},
+      where: 'completed_at = ?',
+      whereArgs: [completedAt.toIso8601String()],
+    );
   }
 
   Future<List<LocalFlashcardSessionResult>> getFlashcardSessionResults() async {
-    final results = await isar.localFlashcardSessionResults.where().findAll();
-    results.sort((a, b) => b.completedAt.compareTo(a.completedAt));
-    return results;
+    final rows = await database.query(
+      'flashcard_session_results',
+      orderBy: 'completed_at DESC',
+    );
+    return rows.map(_flashcardResultFromRow).toList();
   }
 
-  Lesson _lessonFromLocal(LocalLesson local) {
+  Future<Map<String, Object?>?> _bookmarkRow(
+    String vocabId, {
+    DatabaseExecutor? txn,
+  }) async {
+    final rows = await (txn ?? database).query(
+      'bookmarks',
+      where: 'vocab_id = ?',
+      whereArgs: [vocabId],
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  Lesson _lessonFromRow(Map<String, Object?> row) {
     return Lesson(
-      id: local.serverId,
-      title: local.title ?? '',
-      category: local.category ?? '',
-      description: local.description ?? '',
-      isOfflineReady: local.isOfflineReady,
-      downloadable: local.isOfflineReady,
-      version: local.version,
-      size: local.size,
-      vocabIds: local.vocabIds,
-      downloaded: local.downloaded,
-      updatedAt: local.lastSyncedAt,
+      id: row['server_id']?.toString() ?? '',
+      title: row['title']?.toString() ?? '',
+      category: row['category']?.toString() ?? '',
+      description: row['description']?.toString() ?? '',
+      isOfflineReady: _boolFromDb(row['is_offline_ready']),
+      downloadable: _boolFromDb(row['is_offline_ready']),
+      version: _intFromDb(row['version'], fallback: 1),
+      size: _intFromDb(row['size']),
+      vocabIds: _stringListFromJson(row['vocab_ids_json']),
+      downloaded: _boolFromDb(row['downloaded']),
+      updatedAt: _dateFromDb(row['last_synced_at']),
     );
   }
 
-  Vocabulary _vocabularyFromLocal(LocalVocabulary local) {
-    final examples = local.examples
-        .map((raw) {
-          try {
-            return VocabularyExample.fromJson(jsonDecode(raw));
-          } catch (_) {
-            return null;
-          }
-        })
-        .whereType<VocabularyExample>()
-        .toList();
-
+  Vocabulary _vocabularyFromRow(Map<String, Object?> row) {
     return Vocabulary(
-      id: local.serverId,
-      word: local.word ?? '',
-      hiragana: local.hiragana ?? '',
-      romaji: local.romaji ?? '',
-      meaningVi: local.meaningVi ?? '',
-      tags: local.tags,
-      examples: examples,
-      lessonId: (local.lessonId ?? '').isEmpty ? null : local.lessonId,
-      updatedAt: local.lastSyncedAt,
+      id: row['server_id']?.toString() ?? '',
+      word: row['word']?.toString() ?? '',
+      hiragana: row['hiragana']?.toString() ?? '',
+      romaji: row['romaji']?.toString() ?? '',
+      meaningVi: row['meaning_vi']?.toString() ?? '',
+      tags: _stringListFromJson(row['tags_json']),
+      examples: _examplesFromJson(row['examples_json']),
+      lessonId: (row['lesson_id']?.toString() ?? '').isEmpty
+          ? null
+          : row['lesson_id']?.toString(),
+      audioUrl: row['audio_url']?.toString() ?? '',
+      updatedAt: _dateFromDb(row['last_synced_at']),
     );
   }
 
-  LocalBookmark _bookmarkToLocal(
+  Map<String, Object?> _bookmarkToRow(
     Bookmark bookmark, {
-    LocalBookmark? existing,
+    Map<String, Object?>? existing,
     required DateTime lastSyncedAt,
   }) {
     final vocabulary = bookmark.vocabulary;
-    final examples = vocabulary?.examples
-            .map((example) => jsonEncode(example.toJson()))
-            .toList() ??
-        existing?.examples ??
-        const <String>[];
-
-    return LocalBookmark()
-      ..id = existing?.id ?? Isar.autoIncrement
-      ..serverId = bookmark.id.isEmpty ? existing?.serverId : bookmark.id
-      ..vocabId = bookmark.vocabId
-      ..word = vocabulary?.word ?? existing?.word
-      ..hiragana = vocabulary?.hiragana ?? existing?.hiragana
-      ..meaningVi = vocabulary?.meaningVi ?? existing?.meaningVi
-      ..romaji = vocabulary?.romaji ?? existing?.romaji
-      ..audioUrl = vocabulary?.audioUrl ?? existing?.audioUrl
-      ..tags = vocabulary?.tags ?? existing?.tags ?? const <String>[]
-      ..examples = examples
-      ..createdAt = bookmark.createdAt ?? existing?.createdAt
-      ..lastSyncedAt = lastSyncedAt;
+    return {
+      'vocab_id': bookmark.vocabId,
+      'server_id': (bookmark.id.isEmpty
+          ? _stringFromRow(existing, 'server_id')
+          : bookmark.id),
+      'word': vocabulary?.word ?? _stringFromRow(existing, 'word'),
+      'hiragana': vocabulary?.hiragana ?? _stringFromRow(existing, 'hiragana'),
+      'meaning_vi':
+          vocabulary?.meaningVi ?? _stringFromRow(existing, 'meaning_vi'),
+      'romaji': vocabulary?.romaji ?? _stringFromRow(existing, 'romaji'),
+      'audio_url':
+          vocabulary?.audioUrl ?? _stringFromRow(existing, 'audio_url'),
+      'tags_json': jsonEncode(
+        vocabulary?.tags ??
+            _stringListFromJson(_valueFromRow(existing, 'tags_json')),
+      ),
+      'examples_json': jsonEncode(
+        vocabulary?.examples.map((item) => item.toJson()).toList() ??
+            _jsonList(_valueFromRow(existing, 'examples_json')),
+      ),
+      'created_at': (bookmark.createdAt ??
+              _nullableDateFromDb(_valueFromRow(existing, 'created_at')))
+          ?.toIso8601String(),
+      'last_synced_at': lastSyncedAt.toIso8601String(),
+    };
   }
 
-  Bookmark _bookmarkFromLocal(LocalBookmark local) {
-    final examples = local.examples
-        .map((raw) {
-          try {
-            return VocabularyExample.fromJson(jsonDecode(raw));
-          } catch (_) {
-            return null;
-          }
-        })
-        .whereType<VocabularyExample>()
-        .toList();
-
+  Bookmark _bookmarkFromRow(Map<String, Object?> row) {
+    final examples = _examplesFromJson(row['examples_json']);
     final hasVocabulary = [
-      local.word,
-      local.hiragana,
-      local.romaji,
-      local.meaningVi,
-    ].any((value) => (value ?? '').isNotEmpty);
+      row['word'],
+      row['hiragana'],
+      row['romaji'],
+      row['meaning_vi'],
+    ].any((value) => (value?.toString() ?? '').isNotEmpty);
 
     return Bookmark(
-      id: local.serverId ?? '',
-      vocabId: local.vocabId,
+      id: row['server_id']?.toString() ?? '',
+      vocabId: row['vocab_id']?.toString() ?? '',
       vocabulary: hasVocabulary
           ? Vocabulary(
-              id: local.vocabId,
-              word: local.word ?? '',
-              hiragana: local.hiragana ?? '',
-              romaji: local.romaji ?? '',
-              meaningVi: local.meaningVi ?? '',
-              tags: local.tags,
+              id: row['vocab_id']?.toString() ?? '',
+              word: row['word']?.toString() ?? '',
+              hiragana: row['hiragana']?.toString() ?? '',
+              romaji: row['romaji']?.toString() ?? '',
+              meaningVi: row['meaning_vi']?.toString() ?? '',
+              tags: _stringListFromJson(row['tags_json']),
               examples: examples,
-              audioUrl: local.audioUrl ?? '',
+              audioUrl: row['audio_url']?.toString() ?? '',
             )
           : null,
-      createdAt: local.createdAt,
+      createdAt: _dateFromDb(row['created_at'], fallback: null),
     );
   }
+
+  LocalContentPackage _contentPackageFromRow(Map<String, Object?> row) {
+    return LocalContentPackage(
+      lessonId: row['lesson_id']?.toString() ?? '',
+      version: _intFromDb(row['version'], fallback: 1),
+      size: _intFromDb(row['size']),
+      downloadedAt: _dateFromDb(row['downloaded_at']),
+      status: row['status']?.toString(),
+    );
+  }
+
+  LocalFlashcardSessionResult _flashcardResultFromRow(
+    Map<String, Object?> row,
+  ) {
+    return LocalFlashcardSessionResult(
+      lessonId: (row['lesson_id']?.toString() ?? '').isEmpty
+          ? null
+          : row['lesson_id']?.toString(),
+      totalCards: _intFromDb(row['total_cards']),
+      learnedCount: _intFromDb(row['learned_count']),
+      notLearnedCount: _intFromDb(row['not_learned_count']),
+      accuracy: _intFromDb(row['accuracy']),
+      learnedVocabularyIds:
+          _stringListFromJson(row['learned_vocabulary_ids_json']),
+      notLearnedVocabularyIds:
+          _stringListFromJson(row['not_learned_vocabulary_ids_json']),
+      completedAt: _dateFromDb(row['completed_at']),
+      synced: _boolFromDb(row['synced']),
+    );
+  }
+}
+
+int _boolToDb(bool value) => value ? 1 : 0;
+
+bool _boolFromDb(Object? value) {
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  return value?.toString() == '1' || value?.toString() == 'true';
+}
+
+int _intFromDb(Object? value, {int fallback = 0}) {
+  if (value is int) return value;
+  if (value is num) return value.round();
+  return int.tryParse(value?.toString() ?? '') ?? fallback;
+}
+
+DateTime _dateFromDb(Object? value, {DateTime? fallback}) {
+  return DateTime.tryParse(value?.toString() ?? '') ??
+      fallback ??
+      DateTime.fromMillisecondsSinceEpoch(0);
+}
+
+DateTime? _nullableDateFromDb(Object? value) {
+  return DateTime.tryParse(value?.toString() ?? '');
+}
+
+List<String> _stringListFromJson(Object? value) {
+  return _jsonList(value).map((item) => item.toString()).toList();
+}
+
+List<dynamic> _jsonList(Object? value) {
+  try {
+    final decoded = jsonDecode(value?.toString() ?? '[]');
+    if (decoded is List) return decoded;
+  } catch (_) {}
+  return const [];
+}
+
+List<VocabularyExample> _examplesFromJson(Object? value) {
+  return _jsonList(value)
+      .whereType<Map>()
+      .map((item) => VocabularyExample.fromJson(
+            item.map((key, value) => MapEntry(key.toString(), value)),
+          ))
+      .toList();
+}
+
+String _stringFromRow(Map<String, Object?>? row, String key) {
+  return row == null ? '' : row[key]?.toString() ?? '';
+}
+
+Object? _valueFromRow(Map<String, Object?>? row, String key) {
+  return row == null ? null : row[key];
 }

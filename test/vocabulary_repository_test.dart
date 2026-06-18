@@ -36,7 +36,7 @@ void main() {
   test('VocabularyRepository searches cached vocabulary when API fails',
       () async {
     final database = await openTestDatabase('vocab_repo_test');
-    addTearDown(() => database.isar.close(deleteFromDisk: true));
+    addTearDown(() => database.close(deleteFromDisk: true));
     await database.saveVocabulary([
       const Vocabulary(
         id: 'vocab-1',

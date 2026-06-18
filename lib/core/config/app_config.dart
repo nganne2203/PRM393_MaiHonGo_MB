@@ -9,7 +9,7 @@ class AppConfig {
 
   static String get apiBaseUrl {
     if (_configuredApiBaseUrl.isNotEmpty) return _configuredApiBaseUrl;
-    final dotenvApiBaseUrl = dotenv.env['API_BASE_URL']?.trim() ?? '';
+    final dotenvApiBaseUrl = _dotenvValue('API_BASE_URL');
     if (dotenvApiBaseUrl.isNotEmpty) return dotenvApiBaseUrl;
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:8080';
@@ -21,6 +21,11 @@ class AppConfig {
     if (_configuredGoogleWebClientId.isNotEmpty) {
       return _configuredGoogleWebClientId;
     }
-    return dotenv.env['GOOGLE_WEB_CLIENT_ID']?.trim() ?? '';
+    return _dotenvValue('GOOGLE_WEB_CLIENT_ID');
+  }
+
+  static String _dotenvValue(String key) {
+    if (!dotenv.isInitialized) return '';
+    return dotenv.env[key]?.trim() ?? '';
   }
 }

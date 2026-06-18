@@ -6,9 +6,9 @@ import 'test_utils.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('OfflineRepository downloads lesson content into Isar', () async {
+  test('OfflineRepository downloads lesson content into SQLite', () async {
     final database = await openTestDatabase('offline_repo_test');
-    addTearDown(() => database.isar.close(deleteFromDisk: true));
+    addTearDown(() => database.close(deleteFromDisk: true));
 
     final apiClient = fakeApiClient((options) async {
       if (options.path == '/lessons/lesson-1') {

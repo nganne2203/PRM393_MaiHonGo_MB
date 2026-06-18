@@ -4,6 +4,7 @@ import '../core/localization/app_localizations.dart';
 import '../core/state/content_state.dart';
 import '../features/lessons/models/lesson.dart';
 import '../features/lessons/state/lesson_controller.dart';
+import '../features/offline/state/offline_controller.dart';
 import '../shared/widgets/app_state_widgets.dart';
 import '../theme/tokens.dart';
 import '../theme/app_palette.dart';
@@ -18,6 +19,9 @@ class CategoriesScreen extends ConsumerWidget {
     final isLoading = state.status == ContentStatus.loading;
     final isOffline = state.status == ContentStatus.offline;
     final hasError = state.status == ContentStatus.error;
+    final offlineState = ref.watch(offlineProvider);
+    final offlineController = ref.read(offlineProvider.notifier);
+    final lessonController = ref.read(lessonProvider.notifier);
 
     return SafeArea(
       child: Padding(
@@ -65,7 +69,18 @@ class CategoriesScreen extends ConsumerWidget {
                             itemBuilder: (_, i) => _CategoryCard(
                               item: state.lessons[i],
                               index: i,
+                              downloading: offlineState.activeLessonId ==
+                                      state.lessons[i].id &&
+                                  offlineState.status == ContentStatus.loading,
                               onTap: () => onPick(state.lessons[i]),
+                              onDownload: state.lessons[i].isOfflineReady &&
+                                      !state.lessons[i].downloaded
+                                  ? () async {
+                                      await offlineController
+                                          .downloadLesson(state.lessons[i].id);
+                                      await lessonController.loadLessons();
+                                    }
+                                  : null,
                             ),
                           ),
                         ),
@@ -80,11 +95,15 @@ class CategoriesScreen extends ConsumerWidget {
 class _CategoryCard extends StatelessWidget {
   final Lesson item;
   final int index;
+  final bool downloading;
   final VoidCallback onTap;
+  final Future<void> Function()? onDownload;
   const _CategoryCard({
     required this.item,
     required this.index,
+    required this.downloading,
     required this.onTap,
+    required this.onDownload,
   });
 
   @override
@@ -170,16 +189,46 @@ class _CategoryCard extends StatelessWidget {
                   color: AppColors.ink.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
-                alignment: Alignment.topRight,
-                padding: const EdgeInsets.all(12),
-                child: const CircleAvatar(
-                  radius: 14,
-                  backgroundColor: Color(0x55000000),
-                  child: Icon(Icons.cloud_queue_rounded,
-                      color: Colors.white, size: 14),
+              ),
+            ),
+          Positioned(
+            top: 12,
+            right: 12,
+            child: Material(
+              color: Colors.white.withValues(alpha: 0.25),
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: onDownload == null || downloading
+                    ? null
+                    : () async => onDownload!(),
+                child: SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: Center(
+                    child: downloading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Icon(
+                            item.downloaded
+                                ? Icons.download_done_rounded
+                                : item.isOfflineReady
+                                    ? Icons.download_rounded
+                                    : Icons.cloud_queue_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                  ),
                 ),
               ),
             ),
+          ),
         ],
       ),
     );

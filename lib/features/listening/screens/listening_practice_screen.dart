@@ -1,10 +1,23 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/network/api_client.dart';
 import '../../../theme/app_palette.dart';
 import '../../../theme/tokens.dart';
+import '../../lessons/models/lesson.dart';
+import '../../lessons/repositories/lesson_repository.dart';
 import '../state/listening_controller.dart';
 import '../state/listening_state.dart';
+
+class ListeningPracticeArgs {
+  final String? lessonId;
+  final String? lessonTitle;
+
+  const ListeningPracticeArgs({
+    this.lessonId,
+    this.lessonTitle,
+  });
+}
 
 class ListeningPracticeScreen extends StatefulWidget {
   static const defaultLessonId = String.fromEnvironment(
@@ -13,10 +26,12 @@ class ListeningPracticeScreen extends StatefulWidget {
   );
 
   final String? lessonId;
+  final String? lessonTitle;
 
   const ListeningPracticeScreen({
     super.key,
     this.lessonId,
+    this.lessonTitle,
   });
 
   @override
@@ -26,25 +41,30 @@ class ListeningPracticeScreen extends StatefulWidget {
 
 class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
   late final ListeningController _controller;
-  late final TextEditingController _lessonController;
+  final _apiClient = ApiClient();
+  List<Lesson> _lessons = const [];
+  Lesson? _selectedLesson;
+  String? _selectedLessonId;
+  bool _loadingLessons = false;
+  String? _lessonMessage;
+
+  String get _initialLessonId => widget.lessonId?.isNotEmpty == true
+      ? widget.lessonId!
+      : ListeningPracticeScreen.defaultLessonId;
 
   @override
   void initState() {
     super.initState();
     _controller = ListeningController();
-    _lessonController = TextEditingController(
-      text: widget.lessonId?.isNotEmpty == true
-          ? widget.lessonId!
-          : ListeningPracticeScreen.defaultLessonId,
-    );
-    if (_lessonController.text.isNotEmpty) {
-      _controller.loadExercises(_lessonController.text.trim());
+    if (_initialLessonId.isNotEmpty) {
+      _selectedLessonId = _initialLessonId;
+      _controller.loadExercises(_initialLessonId);
     }
+    _bootstrapLessons();
   }
 
   @override
   void dispose() {
-    _lessonController.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -56,7 +76,18 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        title: Text(context.tr('Listening Practice')),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(context.tr('Listening Practice')),
+            if ((_selectedLesson?.title ?? widget.lessonTitle ?? '').isNotEmpty)
+              Text(
+                _selectedLesson?.title ?? widget.lessonTitle!,
+                style: context.captionText,
+                overflow: TextOverflow.ellipsis,
+              ),
+          ],
+        ),
       ),
       body: SafeArea(
         child: AnimatedBuilder(
@@ -78,6 +109,9 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
   }
 
   Widget _lessonLoader() {
+    final locked = _initialLessonId.isNotEmpty;
+    final title = _selectedLesson?.title ?? widget.lessonTitle;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -85,24 +119,65 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: TextField(
-              controller: _lessonController,
-              decoration: InputDecoration(
-                labelText: context.tr('Lesson ID'),
-                hintText: context.tr('Paste a backend lesson id'),
+          Text(context.tr('Lesson'), style: context.captionText),
+          const SizedBox(height: 8),
+          if (locked)
+            Text(
+              title?.isNotEmpty == true ? title! : context.tr('Current lesson'),
+              style: context.h3,
+              overflow: TextOverflow.ellipsis,
+            )
+          else if (_loadingLessons)
+            const LinearProgressIndicator(minHeight: 4)
+          else if (_lessons.isEmpty)
+            Text(
+              context.tr(
+                _lessonMessage ??
+                    'Select a lesson to start listening practice.',
               ),
+              style: context.bodyText,
+            )
+          else
+            DropdownButtonFormField<String>(
+              initialValue: _lessons.any((item) => item.id == _selectedLessonId)
+                  ? _selectedLessonId
+                  : null,
+              decoration: InputDecoration(
+                labelText: context.tr('Select Lesson'),
+              ),
+              items: [
+                for (final lesson in _lessons)
+                  DropdownMenuItem(
+                    value: lesson.id,
+                    child: Text(
+                      lesson.title.isEmpty
+                          ? context.tr('Untitled lesson')
+                          : [
+                              lesson.title,
+                              if (lesson.category.isNotEmpty) lesson.category,
+                            ].join(' · '),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+              onChanged: (lessonId) {
+                final lesson = _lessons
+                    .where((item) => item.id == lessonId)
+                    .cast<Lesson?>()
+                    .firstOrNull;
+                if (lesson == null) return;
+                _selectLesson(lesson);
+              },
             ),
-          ),
-          const SizedBox(width: 10),
-          IconButton.filled(
-            tooltip: context.tr('Load exercises'),
-            onPressed: () =>
-                _controller.loadExercises(_lessonController.text.trim()),
-            icon: const Icon(Icons.search_rounded),
-          ),
+          if (_lessonMessage != null && !_loadingLessons && _lessons.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child:
+                  Text(context.tr(_lessonMessage!), style: context.captionText),
+            ),
         ],
       ),
     );
@@ -170,9 +245,15 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
               backgroundColor: Colors.white,
               foregroundColor: AppColors.sky,
             ),
-            onPressed: _controller.playCurrentAudio,
+            onPressed: exercise.audioUrl.trim().isEmpty
+                ? null
+                : _controller.playCurrentAudio,
             icon: const Icon(Icons.play_arrow_rounded),
-            label: Text(context.tr('Play audio')),
+            label: Text(context.tr(
+              exercise.audioUrl.trim().isEmpty
+                  ? 'Audio unavailable'
+                  : 'Play audio',
+            )),
           ),
           const SizedBox(height: 18),
           Row(
@@ -232,7 +313,7 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
           FilledButton.icon(
             onPressed: isSubmitting
                 ? null
-                : () => _controller.submitAnswer(_lessonController.text.trim()),
+                : () => _controller.submitAnswer(_selectedLessonId ?? ''),
             icon: isSubmitting
                 ? const SizedBox(
                     width: 16,
@@ -336,4 +417,49 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
           style: context.bodyText,
         ),
       );
+
+  Future<void> _bootstrapLessons() async {
+    setState(() {
+      _loadingLessons = true;
+      _lessonMessage = null;
+    });
+
+    try {
+      final response = await _apiClient.dio.get('/lessons');
+      final lessons = LessonRepository.parseLessonListEnvelope(response.data);
+      if (!mounted) return;
+
+      final selected = _selectedLessonId == null
+          ? null
+          : lessons.where((item) => item.id == _selectedLessonId).firstOrNull;
+      setState(() {
+        _lessons = lessons;
+        _selectedLesson = selected;
+        _loadingLessons = false;
+        _lessonMessage = lessons.isEmpty
+            ? 'Select a lesson to start listening practice.'
+            : null;
+      });
+
+      if (_selectedLessonId == null && lessons.length == 1) {
+        _selectLesson(lessons.first);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadingLessons = false;
+        _lessonMessage =
+            'Listening practice is unavailable offline because this lesson has not been downloaded.';
+      });
+    }
+  }
+
+  Future<void> _selectLesson(Lesson lesson) async {
+    setState(() {
+      _selectedLesson = lesson;
+      _selectedLessonId = lesson.id;
+      _lessonMessage = null;
+    });
+    await _controller.loadExercises(lesson.id);
+  }
 }
