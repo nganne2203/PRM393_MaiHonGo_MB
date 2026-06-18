@@ -168,8 +168,14 @@ class SakuraApp extends ConsumerWidget {
           return const SpeakingPracticeScreen();
         },
         '/listening': (c) {
-          final lessonId = ModalRoute.of(c)?.settings.arguments as String?;
-          return ListeningPracticeScreen(lessonId: lessonId);
+          final args = ModalRoute.of(c)?.settings.arguments;
+          if (args is ListeningPracticeArgs) {
+            return ListeningPracticeScreen(
+              lessonId: args.lessonId,
+              lessonTitle: args.lessonTitle,
+            );
+          }
+          return ListeningPracticeScreen(lessonId: args as String?);
         },
         '/writing': (c) {
           final args = ModalRoute.of(c)?.settings.arguments;
@@ -280,11 +286,16 @@ class _MainShellState extends State<MainShell> {
           }
           Navigator.pushNamed(context, '/speaking');
         },
-        onStartListening: (lessonId) => Navigator.pushNamed(
-          context,
-          '/listening',
-          arguments: lessonId,
-        ),
+        onStartListening: (lesson) {
+          Navigator.pushNamed(
+            context,
+            '/listening',
+            arguments: ListeningPracticeArgs(
+              lessonId: lesson?.lessonId,
+              lessonTitle: lesson?.title,
+            ),
+          );
+        },
         onStartWriting: (lesson) {
           if (lesson != null && lesson.lessonId.isNotEmpty) {
             Navigator.pushNamed(

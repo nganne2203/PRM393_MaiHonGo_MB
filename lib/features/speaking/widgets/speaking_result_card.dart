@@ -65,6 +65,15 @@ class SpeakingResultCard extends StatelessWidget {
               value: attempt.transcript.isEmpty ? '-' : attempt.transcript),
           const SizedBox(height: 12),
           Text(attempt.feedback, style: context.bodyText),
+          if (attempt.suggestions.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            ...attempt.suggestions.map(
+              (suggestion) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text('• $suggestion', style: context.bodyText),
+              ),
+            ),
+          ],
           if (attempt.correctWords.isNotEmpty ||
               attempt.wrongWords.isNotEmpty) ...[
             const SizedBox(height: 14),

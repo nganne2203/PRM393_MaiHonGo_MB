@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maihongo/core/config/app_config.dart';
 import 'package:maihongo/features/listening/repositories/listening_repository.dart';
 
 void main() {
@@ -52,5 +53,28 @@ void main() {
     expect(attempt.isCorrect, isTrue);
     expect(attempt.score, 100);
     expect(attempt.pendingSync, isFalse);
+  });
+
+  test('ListeningRepository resolves relative audio URLs', () {
+    final exercises = ListeningRepository.parseExerciseListEnvelope({
+      'success': true,
+      'message': 'ok',
+      'data': [
+        {
+          '_id': 'exercise-1',
+          'lessonId': 'lesson-1',
+          'title': 'Listen',
+          'audioUrl': '/media/listen.mp3',
+          'questionText': 'What did you hear?',
+          'choices': ['水', '学校'],
+          'correctAnswer': '水',
+        }
+      ],
+    });
+
+    expect(
+      exercises.first.audioUrl,
+      Uri.parse(AppConfig.apiBaseUrl).resolve('/media/listen.mp3').toString(),
+    );
   });
 }

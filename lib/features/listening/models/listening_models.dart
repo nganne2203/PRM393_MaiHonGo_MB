@@ -1,3 +1,5 @@
+import '../../../core/config/app_config.dart';
+
 class ListeningExercise {
   final String id;
   final String lessonId;
@@ -34,7 +36,7 @@ class ListeningExercise {
         vocabId: json['vocabId']?.toString(),
         title: json['title']?.toString() ?? '',
         instruction: json['instruction']?.toString() ?? '',
-        audioUrl: json['audioUrl']?.toString() ?? '',
+        audioUrl: _normalizeAudioUrl(json['audioUrl']?.toString() ?? ''),
         transcript: json['transcript']?.toString() ?? '',
         questionText: json['questionText']?.toString() ?? '',
         choices: _toStringList(json['choices']),
@@ -146,4 +148,18 @@ int _toInt(dynamic value) {
   if (value is int) return value;
   if (value is num) return value.round();
   return int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+String _normalizeAudioUrl(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return '';
+
+  final uri = Uri.tryParse(trimmed);
+  if (uri != null && uri.hasScheme) return trimmed;
+
+  final base = Uri.parse(AppConfig.apiBaseUrl);
+  if (trimmed.startsWith('/')) {
+    return base.resolve(trimmed).toString();
+  }
+  return base.resolve('/$trimmed').toString();
 }

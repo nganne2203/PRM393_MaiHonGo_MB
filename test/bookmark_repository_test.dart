@@ -36,7 +36,7 @@ void main() {
 
   test('BookmarkRepository falls back to cached bookmarks', () async {
     final database = await openTestDatabase('bookmark_cache_test');
-    addTearDown(() => database.isar.close(deleteFromDisk: true));
+    addTearDown(() => database.close(deleteFromDisk: true));
 
     var failRemote = false;
     final client = fakeApiClient((options) async {
