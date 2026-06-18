@@ -107,9 +107,11 @@ class ListeningController extends ChangeNotifier {
     ));
 
     try {
+      final resolvedLessonId =
+          lessonId.trim().isNotEmpty ? lessonId.trim() : exercise.lessonId;
       final attempt = await repository.submitAttempt(
         exerciseId: exercise.id,
-        lessonId: lessonId,
+        lessonId: resolvedLessonId,
         selectedAnswer: selectedAnswer,
         clientAttemptId: 'listening-${DateTime.now().microsecondsSinceEpoch}',
         syncSource: 'online',

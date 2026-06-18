@@ -7,9 +7,9 @@ import 'test_utils.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('Isar saves and loads lessons, vocabulary, and downloads', () async {
+  test('SQLite saves and loads lessons, vocabulary, and downloads', () async {
     final database = await openTestDatabase('local_db_test');
-    addTearDown(() => database.isar.close(deleteFromDisk: true));
+    addTearDown(() => database.close(deleteFromDisk: true));
 
     const lesson = Lesson(
       id: 'lesson-1',

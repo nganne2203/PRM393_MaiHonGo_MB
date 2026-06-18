@@ -13,7 +13,7 @@ class HomeScreen extends ConsumerWidget {
   final VoidCallback onSeeAllPractice;
   final ValueChanged<ContinueLearning?> onStartQuiz;
   final ValueChanged<ContinueLearning?> onStartSpeaking;
-  final ValueChanged<String?> onStartListening;
+  final ValueChanged<ContinueLearning?> onStartListening;
   final ValueChanged<ContinueLearning?> onStartWriting;
   final VoidCallback onOpenSaved;
 
@@ -376,7 +376,7 @@ class HomeScreen extends ConsumerWidget {
               iconFg: AppColors.gold,
               title: context.tr('Listening'),
               subtitle: context.tr('Audio practice'),
-              onTap: () => onStartListening(lessonId),
+              onTap: () => onStartListening(summary.continueLearning),
             ),
           ],
         ),
