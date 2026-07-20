@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import '../../../core/media/audio_cache_service.dart';
 import '../../../core/media/audio_player_service.dart';
 import '../../../core/network/api_client.dart';
+import '../../progress/models/progress_models.dart';
+import '../../progress/repositories/progress_repository.dart';
 import '../repositories/listening_repository.dart';
 import 'listening_state.dart';
 
@@ -10,18 +12,29 @@ class ListeningController extends ChangeNotifier {
   final ListeningRepository repository;
   final AudioPlayerService audioPlayerService;
   final AudioCacheService audioCacheService;
+  final ProgressRepository progressRepository;
 
   ListeningState _state = const ListeningState.initial();
+  double _playbackSpeed = 1;
 
   ListeningController({
     ListeningRepository? repository,
     AudioPlayerService? audioPlayerService,
     AudioCacheService? audioCacheService,
+    ProgressRepository? progressRepository,
   })  : repository = repository ?? ListeningRepository(),
         audioPlayerService = audioPlayerService ?? AudioPlayerService(),
-        audioCacheService = audioCacheService ?? AudioCacheService();
+        audioCacheService = audioCacheService ?? AudioCacheService(),
+        progressRepository = progressRepository ?? ProgressRepository();
 
   ListeningState get state => _state;
+  double get playbackSpeed => _playbackSpeed;
+
+  Future<void> setPlaybackSpeed(double speed) async {
+    _playbackSpeed = speed;
+    await audioPlayerService.setSpeed(speed);
+    notifyListeners();
+  }
 
   Future<void> loadExercises(String lessonId) async {
     _setState(_state.copyWith(
@@ -77,9 +90,11 @@ class ListeningController extends ChangeNotifier {
     try {
       final cachedPath = await audioCacheService.cachedPathForUrl(url);
       if (cachedPath != null) {
+        await audioPlayerService.setSpeed(_playbackSpeed);
         await audioPlayerService.playLocalFile(cachedPath);
         return;
       }
+      await audioPlayerService.setSpeed(_playbackSpeed);
       await audioPlayerService.playUrl(url);
       await audioCacheService.cacheRemoteAudio(url);
     } catch (error) {
@@ -116,6 +131,10 @@ class ListeningController extends ChangeNotifier {
         clientAttemptId: 'listening-${DateTime.now().microsecondsSinceEpoch}',
         syncSource: 'online',
       );
+      await _saveProgress(
+        resolvedLessonId,
+        selectedAnswer == exercise.correctAnswer ? 100 : attempt.score,
+      );
       _setState(_state.copyWith(
         status: attempt.pendingSync
             ? ListeningViewStatus.offlineQueued
@@ -131,6 +150,23 @@ class ListeningController extends ChangeNotifier {
         message: ApiClient.describeError(error),
       ));
     }
+  }
+
+  Future<void> _saveProgress(String lessonId, int score) async {
+    try {
+      await progressRepository.updateProgress(
+        ProgressUpdateRequest(
+          lessonId: lessonId,
+          lastViewedVocabIndex: _state.selectedIndex,
+          completed: _state.selectedIndex >= _state.exercises.length - 1,
+          score: score,
+          practiceType: 'listening',
+          completedListeningCount: 1,
+          totalPracticeScore: score,
+          clientUpdatedAt: DateTime.now(),
+        ),
+      );
+    } catch (_) {}
   }
 
   @visibleForTesting

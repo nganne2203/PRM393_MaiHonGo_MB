@@ -46,4 +46,41 @@ void main() {
     expect(vocabularyList.single.examples.single.vi, 'La con mèo');
     expect(packages.single.lessonId, 'lesson-1');
   });
+
+  test('SQLite persists resume state, drafts, and deduplicated sync work',
+      () async {
+    final database = await openTestDatabase('local_state_test');
+    addTearDown(() => database.close(deleteFromDisk: true));
+
+    await database.saveFlashcardResume(
+      sessionKey: 'lesson:lesson-1',
+      currentIndex: 3,
+      statuses: {'vocab-1': 'learned'},
+    );
+    await database.saveWritingDraft(
+      promptId: 'prompt-1',
+      lessonId: 'lesson-1',
+      answerText: 'わたしは学生です。',
+    );
+    await database.enqueueSyncOperation(
+      operationType: 'bookmark',
+      dedupeKey: 'bookmark-vocab-1',
+      payload: {'vocabId': 'vocab-1', 'action': 'add'},
+    );
+    await database.enqueueSyncOperation(
+      operationType: 'bookmark',
+      dedupeKey: 'bookmark-vocab-1',
+      payload: {'vocabId': 'vocab-1', 'action': 'remove'},
+    );
+
+    final resume = await database.getFlashcardResume('lesson:lesson-1');
+    final operations = await database.getSyncOperations(
+      operationType: 'bookmark',
+    );
+    expect(resume?['currentIndex'], 3);
+    expect((resume?['statuses'] as Map)['vocab-1'], 'learned');
+    expect(await database.getWritingDraft('prompt-1'), 'わたしは学生です。');
+    expect(operations, hasLength(1));
+    expect((operations.single['payload'] as Map)['action'], 'remove');
+  });
 }

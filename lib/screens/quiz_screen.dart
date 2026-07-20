@@ -102,43 +102,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   }
 
   List<QuizQuestion> _buildQuestions(List<Vocabulary> vocabulary) {
-    final usable = vocabulary
-        .where((item) => item.id.isNotEmpty && item.meaningVi.isNotEmpty)
-        .toList();
-    if (usable.isEmpty) return const [];
-    final questions = <QuizQuestion>[];
-    final limit = usable.length < 10 ? usable.length : 10;
-    for (var index = 0; index < limit; index += 1) {
-      final vocab = usable[index];
-      final isTyping = index.isOdd;
-      questions.add(
-        QuizQuestion(
-          id: vocab.id,
-          type: isTyping
-              ? QuizQuestionType.typing
-              : QuizQuestionType.multipleChoice,
-          vocabulary: vocab,
-          prompt: isTyping ? 'TYPE THE READING' : 'WHAT DOES THIS MEAN?',
-          correctAnswer: isTyping ? vocab.hiragana : vocab.meaningVi,
-          options: isTyping ? const [] : _optionsFor(vocab, usable),
-        ),
-      );
-    }
-    return questions;
-  }
-
-  List<String> _optionsFor(Vocabulary correct, List<Vocabulary> vocabulary) {
-    final options = <String>[correct.meaningVi];
-    for (final item in vocabulary) {
-      if (options.length >= 4) break;
-      if (item.id != correct.id && item.meaningVi.isNotEmpty) {
-        options.add(item.meaningVi);
-      }
-    }
-    while (options.length < 4) {
-      options.add('Not sure');
-    }
-    return options;
+    return QuizQuestionFactory.build(vocabulary);
   }
 
   void _startTimer() {

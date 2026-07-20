@@ -39,6 +39,8 @@ class ProgressUpdateRequest {
   final int score;
   final String practiceType;
   final int? completedWritingCount;
+  final int? completedListeningCount;
+  final int? completedSpeakingCount;
   final int? totalPracticeScore;
   final DateTime clientUpdatedAt;
 
@@ -49,6 +51,8 @@ class ProgressUpdateRequest {
     required this.score,
     required this.practiceType,
     this.completedWritingCount,
+    this.completedListeningCount,
+    this.completedSpeakingCount,
     this.totalPracticeScore,
     required this.clientUpdatedAt,
   });
@@ -61,6 +65,10 @@ class ProgressUpdateRequest {
         'practiceType': practiceType,
         if (completedWritingCount != null)
           'completedWritingCount': completedWritingCount,
+        if (completedListeningCount != null)
+          'completedListeningCount': completedListeningCount,
+        if (completedSpeakingCount != null)
+          'completedSpeakingCount': completedSpeakingCount,
         if (totalPracticeScore != null)
           'totalPracticeScore': totalPracticeScore,
         'lastPracticeAt': clientUpdatedAt.toIso8601String(),
@@ -76,6 +84,12 @@ class ProgressUpdateRequest {
       practiceType: json['practiceType']?.toString() ?? 'vocabulary',
       completedWritingCount: json.containsKey('completedWritingCount')
           ? _toInt(json['completedWritingCount'])
+          : null,
+      completedListeningCount: json.containsKey('completedListeningCount')
+          ? _toInt(json['completedListeningCount'])
+          : null,
+      completedSpeakingCount: json.containsKey('completedSpeakingCount')
+          ? _toInt(json['completedSpeakingCount'])
           : null,
       totalPracticeScore: json.containsKey('totalPracticeScore')
           ? _toInt(json['totalPracticeScore'])

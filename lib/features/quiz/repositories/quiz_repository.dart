@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/network/api_client.dart';
@@ -11,12 +12,15 @@ class QuizRepository {
 
   final ApiClient apiClient;
   final Connectivity connectivity;
+  final Future<bool> Function()? _onlineCheck;
 
   QuizRepository({
     ApiClient? apiClient,
     Connectivity? connectivity,
+    Future<bool> Function()? onlineCheck,
   })  : apiClient = apiClient ?? ApiClient(),
-        connectivity = connectivity ?? Connectivity();
+        connectivity = connectivity ?? Connectivity(),
+        _onlineCheck = onlineCheck;
 
   Future<QuizResult> submitQuizResult(QuizSubmission submission) async {
     if (!await isOnline()) {
@@ -24,16 +28,33 @@ class QuizRepository {
       return QuizResult.pending(submission);
     }
 
-    final response =
-        await apiClient.dio.post('/quiz/results', data: submission.toJson());
-    return parseQuizResultEnvelope(asJsonMap(response.data));
+    try {
+      final response =
+          await apiClient.dio.post('/quiz/results', data: submission.toJson());
+      return parseQuizResultEnvelope(asJsonMap(response.data));
+    } catch (error) {
+      if (!_isRetryable(error)) rethrow;
+      await _savePending(submission);
+      return QuizResult.pending(submission);
+    }
   }
 
   Future<List<QuizResult>> getQuizResults({String? lessonId}) async {
-    final response = await apiClient.dio.get('/quiz/results');
-    final remote = parseQuizResultListEnvelope(asJsonMap(response.data));
-    if (lessonId == null || lessonId.isEmpty) return remote;
-    return remote.where((item) => item.lessonId == lessonId).toList();
+    final pending = (await _loadPending()).map(QuizResult.pending);
+    final filteredPending = lessonId == null || lessonId.isEmpty
+        ? pending
+        : pending.where((item) => item.lessonId == lessonId);
+    try {
+      final response = await apiClient.dio.get('/quiz/results');
+      final remote = parseQuizResultListEnvelope(asJsonMap(response.data));
+      final filteredRemote = lessonId == null || lessonId.isEmpty
+          ? remote
+          : remote.where((item) => item.lessonId == lessonId).toList();
+      return [...filteredPending, ...filteredRemote];
+    } catch (_) {
+      if (filteredPending.isNotEmpty) return filteredPending.toList();
+      rethrow;
+    }
   }
 
   Future<List<QuizResult>> syncPendingResults() async {
@@ -53,6 +74,10 @@ class QuizRepository {
             clientAttemptId: submission.clientAttemptId,
           ),
         );
+        if (result.pendingSync) {
+          await _saveAllPending(pending);
+          return synced;
+        }
         synced.add(result);
       } catch (_) {
         await _saveAllPending(pending);
@@ -64,6 +89,7 @@ class QuizRepository {
   }
 
   Future<bool> isOnline() async {
+    if (_onlineCheck != null) return _onlineCheck();
     final result = await connectivity.checkConnectivity();
     return !result.contains(ConnectivityResult.none);
   }
@@ -127,4 +153,13 @@ class QuizRepository {
       jsonEncode(submissions.map((item) => item.toJson()).toList()),
     );
   }
+}
+
+bool _isRetryable(Object error) {
+  if (error is! DioException) return false;
+  return error.response == null ||
+      error.type == DioExceptionType.connectionError ||
+      error.type == DioExceptionType.connectionTimeout ||
+      error.type == DioExceptionType.receiveTimeout ||
+      error.type == DioExceptionType.sendTimeout;
 }

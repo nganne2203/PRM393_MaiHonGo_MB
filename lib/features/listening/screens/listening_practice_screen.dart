@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/storage/local_database_service.dart';
 import '../../../theme/app_palette.dart';
 import '../../../theme/tokens.dart';
 import '../../lessons/models/lesson.dart';
@@ -255,6 +256,19 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
                   : 'Play audio',
             )),
           ),
+          const SizedBox(height: 12),
+          SegmentedButton<double>(
+            segments: const [
+              ButtonSegment(value: 0.75, label: Text('0.75x')),
+              ButtonSegment(value: 1, label: Text('1x')),
+              ButtonSegment(value: 1.25, label: Text('1.25x')),
+            ],
+            selected: {_controller.playbackSpeed},
+            onSelectionChanged: (selection) {
+              _controller.setPlaybackSpeed(selection.first);
+            },
+            showSelectedIcon: false,
+          ),
           const SizedBox(height: 18),
           Row(
             children: [
@@ -425,8 +439,12 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
     });
 
     try {
-      final response = await _apiClient.dio.get('/lessons');
-      final lessons = LessonRepository.parseLessonListEnvelope(response.data);
+      final repository = LessonRepository(
+        apiClient: _apiClient,
+        localDatabase: await LocalDatabaseService.open(),
+      );
+      final result = await repository.getLessons();
+      final lessons = result.data;
       if (!mounted) return;
 
       final selected = _selectedLessonId == null
@@ -437,19 +455,21 @@ class _ListeningPracticeScreenState extends State<ListeningPracticeScreen> {
         _selectedLesson = selected;
         _loadingLessons = false;
         _lessonMessage = lessons.isEmpty
-            ? 'Select a lesson to start listening practice.'
-            : null;
+            ? result.errorMessage ??
+                'Select a lesson to start listening practice.'
+            : result.isOffline
+                ? 'Offline lessons loaded from this device.'
+                : null;
       });
 
       if (_selectedLessonId == null && lessons.length == 1) {
         _selectLesson(lessons.first);
       }
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _loadingLessons = false;
-        _lessonMessage =
-            'Listening practice is unavailable offline because this lesson has not been downloaded.';
+        _lessonMessage = 'No lessons are available on this device yet.';
       });
     }
   }

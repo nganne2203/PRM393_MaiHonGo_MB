@@ -45,6 +45,7 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
   final _repository = WritingRepository();
   final _progressRepository = ProgressRepository();
   final _answerController = TextEditingController();
+  Timer? _draftTimer;
 
   List<Lesson> _lessons = const [];
   List<WritingPrompt> _prompts = const [];
@@ -73,6 +74,7 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
 
   @override
   void dispose() {
+    _draftTimer?.cancel();
     _answerController.dispose();
     super.dispose();
   }
@@ -127,6 +129,7 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
         _index = 0;
         _answerController.clear();
       });
+      await _restoreDraft();
     } catch (error) {
       setState(() => _message = ApiClient.describeError(error));
     } finally {
@@ -178,9 +181,9 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
 
     try {
       final submission = await _repository.submit(request);
-      if (!submission.pendingSync) {
-        await _saveProgress(lessonId, submission.score);
-      }
+      _draftTimer?.cancel();
+      await _repository.clearDraft(prompt.id);
+      await _saveProgress(lessonId, submission.score);
       setState(() {
         _lastSubmission = submission;
         _message = submission.pendingSync ? savedOfflineMessage : savedMessage;
@@ -211,7 +214,7 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
     }
   }
 
-  void _nextPrompt() {
+  Future<void> _nextPrompt() async {
     if (_index >= _prompts.length - 1) return;
     setState(() {
       _index += 1;
@@ -219,6 +222,34 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
       _message = null;
       _answerController.clear();
     });
+    await _restoreDraft();
+  }
+
+  void _scheduleDraftSave(String answer) {
+    final prompt = _currentPrompt;
+    final lessonId = _selectedLessonId;
+    if (prompt == null || lessonId == null || lessonId.isEmpty) return;
+    _draftTimer?.cancel();
+    _draftTimer = Timer(const Duration(milliseconds: 400), () {
+      _repository.saveDraft(
+        promptId: prompt.id,
+        lessonId: lessonId,
+        answerText: answer,
+      );
+    });
+  }
+
+  Future<void> _restoreDraft() async {
+    final prompt = _currentPrompt;
+    if (prompt == null) return;
+    try {
+      final draft = await _repository.loadDraft(prompt.id);
+      if (!mounted || draft == null) return;
+      _answerController.text = draft;
+      _answerController.selection = TextSelection.collapsed(
+        offset: draft.length,
+      );
+    } catch (_) {}
   }
 
   void _openHistory() {
@@ -385,6 +416,7 @@ class _WritingPracticeScreenState extends ConsumerState<WritingPracticeScreen> {
         const SizedBox(height: 16),
         TextField(
           controller: _answerController,
+          onChanged: _scheduleDraftSave,
           maxLines: 7,
           minLines: 5,
           textInputAction: TextInputAction.newline,
