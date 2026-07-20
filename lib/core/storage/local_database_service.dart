@@ -14,7 +14,7 @@ import 'local_models.dart';
 
 class LocalDatabaseService {
   static const _databaseName = 'maihongo_local.db';
-  static const _databaseVersion = 1;
+  static const _databaseVersion = 2;
 
   final Database database;
   final String? path;
@@ -33,6 +33,8 @@ class LocalDatabaseService {
     final options = OpenDatabaseOptions(
       version: _databaseVersion,
       onCreate: (db, version) => _createSchema(db),
+      onUpgrade: (db, oldVersion, newVersion) =>
+          _upgradeSchema(db, oldVersion, newVersion),
     );
     final database = await _openDatabaseWithRecovery(factory, dbPath, options);
     return LocalDatabaseService._(database, path: dbPath);
@@ -131,6 +133,68 @@ class LocalDatabaseService {
         learned_vocabulary_ids_json TEXT NOT NULL DEFAULT '[]',
         not_learned_vocabulary_ids_json TEXT NOT NULL DEFAULT '[]',
         synced INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    await _createVersionTwoTables(db);
+  }
+
+  static Future<void> _upgradeSchema(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    if (oldVersion < 2) await _createVersionTwoTables(db);
+  }
+
+  static Future<void> _createVersionTwoTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS practice_content (
+        kind TEXT NOT NULL,
+        server_id TEXT NOT NULL,
+        lesson_id TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (kind, server_id)
+      )
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_practice_content_lesson
+      ON practice_content(kind, lesson_id)
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS offline_media (
+        lesson_id TEXT NOT NULL,
+        remote_url TEXT NOT NULL,
+        local_path TEXT NOT NULL,
+        downloaded_at TEXT NOT NULL,
+        PRIMARY KEY (lesson_id, remote_url)
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS sync_operations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        operation_type TEXT NOT NULL,
+        dedupe_key TEXT NOT NULL UNIQUE,
+        payload_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        retry_count INTEGER NOT NULL DEFAULT 0,
+        last_error TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS flashcard_resume (
+        session_key TEXT PRIMARY KEY,
+        current_index INTEGER NOT NULL DEFAULT 0,
+        statuses_json TEXT NOT NULL DEFAULT '{}',
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS writing_drafts (
+        prompt_id TEXT PRIMARY KEY,
+        lesson_id TEXT NOT NULL,
+        answer_text TEXT NOT NULL,
+        updated_at TEXT NOT NULL
       )
     ''');
   }
@@ -370,6 +434,12 @@ class LocalDatabaseService {
   }
 
   Future<void> removeDownloaded(String lessonId) async {
+    final mediaRows = await database.query(
+      'offline_media',
+      columns: ['local_path'],
+      where: 'lesson_id = ?',
+      whereArgs: [lessonId],
+    );
     await database.transaction((txn) async {
       await txn.update(
         'lessons',
@@ -382,7 +452,235 @@ class LocalDatabaseService {
         where: 'lesson_id = ?',
         whereArgs: [lessonId],
       );
+      await txn.delete(
+        'vocabulary',
+        where: 'lesson_id = ?',
+        whereArgs: [lessonId],
+      );
+      await txn.delete(
+        'practice_content',
+        where: 'lesson_id = ?',
+        whereArgs: [lessonId],
+      );
+      await txn.delete(
+        'offline_media',
+        where: 'lesson_id = ?',
+        whereArgs: [lessonId],
+      );
     });
+    for (final row in mediaRows) {
+      final path = row['local_path']?.toString() ?? '';
+      if (path.isEmpty) continue;
+      final file = File(path);
+      if (await file.exists()) await file.delete();
+    }
+  }
+
+  Future<void> savePracticeContent({
+    required String kind,
+    required String lessonId,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    final now = DateTime.now().toIso8601String();
+    await database.transaction((txn) async {
+      await txn.delete(
+        'practice_content',
+        where: 'kind = ? AND lesson_id = ?',
+        whereArgs: [kind, lessonId],
+      );
+      for (final item in items) {
+        final id = (item['_id'] ?? item['id'] ?? '').toString();
+        if (id.isEmpty) continue;
+        await txn.insert(
+          'practice_content',
+          {
+            'kind': kind,
+            'server_id': id,
+            'lesson_id': lessonId,
+            'payload_json': jsonEncode(item),
+            'updated_at': now,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getPracticeContent({
+    required String kind,
+    required String lessonId,
+  }) async {
+    final rows = await database.query(
+      'practice_content',
+      columns: ['payload_json'],
+      where: 'kind = ? AND lesson_id = ?',
+      whereArgs: [kind, lessonId],
+      orderBy: 'updated_at ASC',
+    );
+    return rows
+        .map((row) {
+          final decoded = jsonDecode(row['payload_json']?.toString() ?? '{}');
+          return decoded is Map
+              ? decoded.map((key, value) => MapEntry(key.toString(), value))
+              : <String, dynamic>{};
+        })
+        .where((item) => item.isNotEmpty)
+        .toList();
+  }
+
+  Future<void> saveOfflineMedia({
+    required String lessonId,
+    required String remoteUrl,
+    required String localPath,
+  }) {
+    return database.insert(
+      'offline_media',
+      {
+        'lesson_id': lessonId,
+        'remote_url': remoteUrl,
+        'local_path': localPath,
+        'downloaded_at': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> enqueueSyncOperation({
+    required String operationType,
+    required String dedupeKey,
+    required Map<String, dynamic> payload,
+  }) {
+    return database.insert(
+      'sync_operations',
+      {
+        'operation_type': operationType,
+        'dedupe_key': dedupeKey,
+        'payload_json': jsonEncode(payload),
+        'created_at': DateTime.now().toIso8601String(),
+        'retry_count': 0,
+        'last_error': null,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getSyncOperations({
+    String? operationType,
+  }) async {
+    final rows = await database.query(
+      'sync_operations',
+      where: operationType == null ? null : 'operation_type = ?',
+      whereArgs: operationType == null ? null : [operationType],
+      orderBy: 'created_at ASC',
+    );
+    return rows.map((row) {
+      final payload = jsonDecode(row['payload_json']?.toString() ?? '{}');
+      return <String, dynamic>{
+        ...row,
+        'payload': payload is Map
+            ? payload.map((key, value) => MapEntry(key.toString(), value))
+            : <String, dynamic>{},
+      };
+    }).toList();
+  }
+
+  Future<void> deleteSyncOperation(int id) {
+    return database.delete(
+      'sync_operations',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> markSyncOperationFailed(int id, Object error) {
+    return database.rawUpdate(
+      '''
+      UPDATE sync_operations
+      SET retry_count = retry_count + 1, last_error = ?
+      WHERE id = ?
+      ''',
+      [error.toString(), id],
+    );
+  }
+
+  Future<void> saveFlashcardResume({
+    required String sessionKey,
+    required int currentIndex,
+    required Map<String, String> statuses,
+  }) {
+    return database.insert(
+      'flashcard_resume',
+      {
+        'session_key': sessionKey,
+        'current_index': currentIndex,
+        'statuses_json': jsonEncode(statuses),
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Map<String, dynamic>?> getFlashcardResume(String sessionKey) async {
+    final rows = await database.query(
+      'flashcard_resume',
+      where: 'session_key = ?',
+      whereArgs: [sessionKey],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    final statuses =
+        jsonDecode(rows.first['statuses_json']?.toString() ?? '{}');
+    return {
+      'currentIndex': _intFromDb(rows.first['current_index']),
+      'statuses': statuses is Map
+          ? statuses
+              .map((key, value) => MapEntry(key.toString(), value.toString()))
+          : <String, String>{},
+    };
+  }
+
+  Future<void> clearFlashcardResume(String sessionKey) {
+    return database.delete(
+      'flashcard_resume',
+      where: 'session_key = ?',
+      whereArgs: [sessionKey],
+    );
+  }
+
+  Future<void> saveWritingDraft({
+    required String promptId,
+    required String lessonId,
+    required String answerText,
+  }) {
+    return database.insert(
+      'writing_drafts',
+      {
+        'prompt_id': promptId,
+        'lesson_id': lessonId,
+        'answer_text': answerText,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<String?> getWritingDraft(String promptId) async {
+    final rows = await database.query(
+      'writing_drafts',
+      columns: ['answer_text'],
+      where: 'prompt_id = ?',
+      whereArgs: [promptId],
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.first['answer_text']?.toString();
+  }
+
+  Future<void> clearWritingDraft(String promptId) {
+    return database.delete(
+      'writing_drafts',
+      where: 'prompt_id = ?',
+      whereArgs: [promptId],
+    );
   }
 
   Future<List<LocalContentPackage>> getContentPackages() async {

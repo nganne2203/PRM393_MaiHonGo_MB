@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../../core/storage/local_database_service.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../lessons/models/lesson.dart';
 import '../../lessons/repositories/lesson_repository.dart';
@@ -397,25 +398,31 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen> {
       _lessonMessage = null;
     });
     try {
-      final response = await _apiClient.dio.get('/lessons');
-      final lessons = LessonRepository.parseLessonListEnvelope(response.data);
+      final repository = LessonRepository(
+        apiClient: _apiClient,
+        localDatabase: await LocalDatabaseService.open(),
+      );
+      final result = await repository.getLessons();
+      final lessons = result.data;
       if (!mounted) return;
       setState(() {
         _lessons = lessons;
         _loadingLessons = false;
         _lessonMessage = lessons.isEmpty
-            ? 'Select a lesson to start speaking practice.'
-            : null;
+            ? result.errorMessage ??
+                'Select a lesson to start speaking practice.'
+            : result.isOffline
+                ? 'Offline lessons loaded from this device.'
+                : null;
       });
       if (lessons.length == 1) {
         _selectLesson(lessons.first);
       }
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _loadingLessons = false;
-        _lessonMessage =
-            'Speaking practice is unavailable offline because this lesson has not been downloaded.';
+        _lessonMessage = 'No lessons are available on this device yet.';
       });
     }
   }

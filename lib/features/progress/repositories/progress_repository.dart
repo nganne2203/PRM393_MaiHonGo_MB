@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/network/api_client.dart';
@@ -40,11 +41,19 @@ class ProgressRepository {
       return _localProgress(request);
     }
 
-    final response =
-        await apiClient.dio.put('/progress', data: request.toJson());
-    final data = ApiEnvelope.unwrapData(asJsonMap(response.data));
-    if (data is! Map) throw const ApiException('Progress response is invalid.');
-    return ProgressModel.fromJson(asJsonMap(data));
+    try {
+      final response =
+          await apiClient.dio.put('/progress', data: request.toJson());
+      final data = ApiEnvelope.unwrapData(asJsonMap(response.data));
+      if (data is! Map) {
+        throw const ApiException('Progress response is invalid.');
+      }
+      return ProgressModel.fromJson(asJsonMap(data));
+    } catch (error) {
+      if (!_isRetryable(error)) rethrow;
+      await _savePending(request);
+      return _localProgress(request);
+    }
   }
 
   Future<List<ProgressModel>> syncPendingProgress() async {
@@ -119,4 +128,13 @@ class ProgressRepository {
       lastPracticeAt: request.clientUpdatedAt,
     );
   }
+}
+
+bool _isRetryable(Object error) {
+  if (error is! DioException) return false;
+  return error.response == null ||
+      error.type == DioExceptionType.connectionError ||
+      error.type == DioExceptionType.connectionTimeout ||
+      error.type == DioExceptionType.receiveTimeout ||
+      error.type == DioExceptionType.sendTimeout;
 }

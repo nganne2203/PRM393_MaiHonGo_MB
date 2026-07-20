@@ -4,13 +4,14 @@ import '../core/localization/app_localizations.dart';
 import '../core/network/api_client.dart';
 import '../features/bookmarks/models/bookmark.dart';
 import '../features/bookmarks/repositories/bookmark_repository.dart';
+import '../features/vocabulary/models/vocabulary.dart';
 import '../shared/widgets/app_state_widgets.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_palette.dart';
 import '../theme/tokens.dart';
 
 class SavedScreen extends StatefulWidget {
-  final VoidCallback onReview;
+  final ValueChanged<List<Vocabulary>> onReview;
 
   const SavedScreen({super.key, required this.onReview});
 
@@ -86,7 +87,7 @@ class _SavedScreenState extends State<SavedScreen> {
             ),
             const SizedBox(height: 16),
             GestureDetector(
-              onTap: _bookmarks.isEmpty ? null : widget.onReview,
+              onTap: _reviewSavedWords,
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -151,6 +152,15 @@ class _SavedScreenState extends State<SavedScreen> {
         ),
       ),
     );
+  }
+
+  void _reviewSavedWords() {
+    final cards = _bookmarks
+        .map((bookmark) => bookmark.vocabulary)
+        .whereType<Vocabulary>()
+        .toList();
+    if (cards.isEmpty) return;
+    widget.onReview(cards);
   }
 
   Widget _bookmarkTile(Bookmark bookmark) {

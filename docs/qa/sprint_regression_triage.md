@@ -14,18 +14,22 @@ Owner: Member 5
 
 ## Latest Regression Run
 
-Date: 2026-06-14
-Owner: Member 5
+Date: 2026-07-20
+Owner: Codex implementation pass
 
 - `flutter analyze`: passed, no issues found.
-- `flutter test`: passed, all tests passed. Targeted Member 5 coverage includes shared state widgets, bookmark cache fallback, settings/onboarding persistence, and editable profile preferences.
-- Local offline content now uses SQLite through `sqflite`/`sqflite_common_ffi`; no Isar generator or Isar native library setup is required for QA.
+- `flutter test`: passed, 46 tests. Added coverage for randomized quiz options, complete offline package storage, package cleanup, bookmark queue retry, flashcard resume state, writing drafts, deduplicated sync operations, and retention when Wi-Fi is available but the backend is unreachable.
+- Android `assembleDebug`: passed. Local notification receivers, timezone plugin, core library desugaring, and the Flutter application compiled into the debug APK.
+- iOS Simulator build: not completed because Flutter could not finish downloading the iOS engine toolchain; no Xcode compile was reached.
+- Manual Android/iOS scripts still need execution on physical or emulated devices before release sign-off.
 
 ## Current Bug Log
 
 | ID | Feature | Severity | Owner | Status | Notes |
 | --- | --- | --- | --- | --- | --- |
-| None | Member 5 regression scope | N/A | Member 5 | Verified | No blocker, high, medium, or low defects were found in the automated regression run above. |
+| QA-001 | Google OAuth platform setup | High | Release owner | External setup | Android OAuth client/SHA and iOS client URL scheme must match the final application identifiers. |
+| QA-002 | Release identity and signing | High | Release owner | External setup | Replace `com.example.maihongo_mb` and configure a production signing key before store release. |
+| QA-003 | Device regression | Medium | QA | Pending | Execute clean install, notification permission, offline package, reconnect sync, recording, and iOS scripts. |
 
 ## Bug Triage Fields
 

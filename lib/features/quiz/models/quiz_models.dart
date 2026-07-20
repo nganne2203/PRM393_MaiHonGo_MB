@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import '../../vocabulary/models/vocabulary.dart';
 
 enum QuizQuestionType {
@@ -32,6 +34,59 @@ class QuizQuestion {
     required this.correctAnswer,
     required this.options,
   });
+}
+
+class QuizQuestionFactory {
+  const QuizQuestionFactory._();
+
+  static List<QuizQuestion> build(
+    List<Vocabulary> vocabulary, {
+    int maxQuestions = 10,
+    Random? random,
+  }) {
+    final generator = random ?? Random();
+    final usable = vocabulary
+        .where((item) => item.id.isNotEmpty && item.meaningVi.trim().isNotEmpty)
+        .toList()
+      ..shuffle(generator);
+    if (usable.isEmpty) return const [];
+
+    final uniqueMeanings = usable
+        .map((item) => item.meaningVi.trim())
+        .where((meaning) => meaning.isNotEmpty)
+        .toSet()
+        .toList();
+    final limit = min(maxQuestions, usable.length);
+
+    return List.generate(limit, (index) {
+      final vocab = usable[index];
+      final canBuildChoices = uniqueMeanings.length > 1;
+      final isTyping = index.isOdd || !canBuildChoices;
+      return QuizQuestion(
+        id: vocab.id,
+        type: isTyping
+            ? QuizQuestionType.typing
+            : QuizQuestionType.multipleChoice,
+        vocabulary: vocab,
+        prompt: isTyping ? 'TYPE THE READING' : 'WHAT DOES THIS MEAN?',
+        correctAnswer: isTyping ? vocab.hiragana : vocab.meaningVi,
+        options: isTyping
+            ? const []
+            : _optionsFor(vocab.meaningVi.trim(), uniqueMeanings, generator),
+      );
+    });
+  }
+
+  static List<String> _optionsFor(
+    String correct,
+    List<String> meanings,
+    Random random,
+  ) {
+    final distractors = meanings.where((item) => item != correct).toList()
+      ..shuffle(random);
+    final options = <String>[correct, ...distractors.take(3)]..shuffle(random);
+    return options;
+  }
 }
 
 class QuizAnswer {

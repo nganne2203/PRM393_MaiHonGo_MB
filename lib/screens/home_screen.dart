@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/localization/app_localizations.dart';
 import '../features/dashboard/models/dashboard_summary.dart';
 import '../features/dashboard/state/dashboard_controller.dart';
+import '../features/settings/repositories/app_preferences_repository.dart';
+import '../features/settings/state/app_settings_controller.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_palette.dart';
 import '../theme/tokens.dart';
@@ -32,6 +34,8 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardProvider);
     final summary = state.summary;
+    final settings = ref.watch(appSettingsControllerProvider).valueOrNull ??
+        const AppSettings.defaults();
 
     if (state.status == DashboardStatus.loading && summary == null) {
       return const SafeArea(child: Center(child: CircularProgressIndicator()));
@@ -57,7 +61,7 @@ class HomeScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.only(bottom: 96),
           children: [
-            _heroHeader(context, summary),
+            _heroHeader(context, summary, settings.dailyWordGoal),
             if (state.status == DashboardStatus.error && state.message != null)
               _StatusBanner(
                 message: state.message!,
@@ -120,7 +124,11 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _heroHeader(BuildContext context, DashboardSummary summary) =>
+  Widget _heroHeader(
+    BuildContext context,
+    DashboardSummary summary,
+    int dailyWordGoal,
+  ) =>
       Container(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         decoration: const BoxDecoration(
@@ -198,7 +206,7 @@ class HomeScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              _goalCard(context, summary.stats),
+              _goalCard(context, summary.stats, dailyWordGoal),
             ],
           ),
         ),
@@ -584,7 +592,12 @@ class HomeScreen extends ConsumerWidget {
         ),
       );
 
-  Widget _goalCard(BuildContext context, DashboardStats stats) => Container(
+  Widget _goalCard(
+    BuildContext context,
+    DashboardStats stats,
+    int target,
+  ) =>
+      Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.15),
@@ -607,8 +620,8 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 Text(
                   context.l10n.isVietnamese
-                      ? '${stats.dailyGoalCompleted} / ${stats.dailyGoalTarget} từ'
-                      : '${stats.dailyGoalCompleted} / ${stats.dailyGoalTarget} words',
+                      ? '${stats.dailyGoalCompleted} / $target từ'
+                      : '${stats.dailyGoalCompleted} / $target words',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -621,7 +634,11 @@ class HomeScreen extends ConsumerWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(999),
               child: LinearProgressIndicator(
-                value: stats.dailyGoalProgress,
+                value: target <= 0
+                    ? 0
+                    : (stats.dailyGoalCompleted / target)
+                        .clamp(0, 1)
+                        .toDouble(),
                 minHeight: 8,
                 backgroundColor: Colors.white.withValues(alpha: 0.2),
                 valueColor: const AlwaysStoppedAnimation(AppColors.gold),

@@ -99,11 +99,16 @@ class OfflineDownloadsScreen extends ConsumerWidget {
                         description: lesson.description,
                         downloading: offlineState.activeLessonId == lesson.id &&
                             offlineState.status == ContentStatus.loading,
+                        progress: offlineState.activeLessonId == lesson.id
+                            ? offlineState.downloadProgress
+                            : 0,
                         onDownload: lesson.isOfflineReady
                             ? () => ref
                                 .read(offlineProvider.notifier)
                                 .downloadLesson(lesson.id)
                             : null,
+                        onCancel:
+                            ref.read(offlineProvider.notifier).cancelDownload,
                       ),
                     ),
             ],
@@ -189,14 +194,18 @@ class _AvailableCard extends StatelessWidget {
   final String category;
   final String description;
   final bool downloading;
+  final double progress;
   final VoidCallback? onDownload;
+  final VoidCallback onCancel;
 
   const _AvailableCard({
     required this.title,
     required this.category,
     required this.description,
     required this.downloading,
+    required this.progress,
     required this.onDownload,
+    required this.onCancel,
   });
 
   @override
@@ -232,11 +241,15 @@ class _AvailableCard extends StatelessWidget {
             ),
           ),
           IconButton(
+            tooltip: context.tr(downloading ? 'Cancel' : 'Download'),
             icon: downloading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      value: progress > 0 ? progress : null,
+                    ),
                   )
                 : Icon(
                     Icons.download_rounded,
@@ -245,7 +258,7 @@ class _AvailableCard extends StatelessWidget {
                         : AppColors.primary,
                     size: 20,
                   ),
-            onPressed: downloading ? null : onDownload,
+            onPressed: downloading ? onCancel : onDownload,
           ),
         ],
       ),

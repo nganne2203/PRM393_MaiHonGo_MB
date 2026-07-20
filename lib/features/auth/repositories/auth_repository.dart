@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'dart:convert';
 
@@ -45,9 +46,8 @@ class AuthRepository {
       );
     }
 
-    // On Web the plugin requires `clientId`.
-    // On Android / iOS the plugin uses the google-services.json / plist; we
-    // pass `serverClientId` so the backend can verify the returned idToken.
+    // On Web the plugin requires `clientId`. On mobile, `serverClientId`
+    // requests an idToken whose audience is the backend's Web OAuth client ID.
     return GoogleSignIn(
       clientId: kIsWeb ? clientId : null,
       serverClientId: !kIsWeb ? clientId : null,
@@ -94,12 +94,19 @@ class AuthRepository {
     // the Google button.
     final googleSignIn = _createGoogleSignIn();
 
-    final account = await googleSignIn.signIn();
-    if (account == null) {
-      throw const AppException('Google sign-in was cancelled.');
+    GoogleSignInAccount? account;
+    GoogleSignInAuthentication auth;
+    try {
+      account = await googleSignIn.signIn();
+      if (account == null) {
+        throw const AppException('Google sign-in was cancelled.');
+      }
+
+      auth = await account.authentication;
+    } on PlatformException catch (error) {
+      throw _googleSignInException(error);
     }
 
-    final auth = await account.authentication;
     final idToken = auth.idToken;
     if (idToken == null || idToken.isEmpty) {
       throw const AppException('Google did not return an id token.');
@@ -220,6 +227,32 @@ class AuthRepository {
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
+
+  AppException _googleSignInException(PlatformException error) {
+    final details = error.details?.toString() ?? '';
+    final message = error.message ?? '';
+    final isAndroidConfigError = !kIsWeb &&
+        Platform.isAndroid &&
+        error.code == 'sign_in_failed' &&
+        (message.contains('ApiException: 10') ||
+            details.contains('ApiException: 10') ||
+            message.contains('10:') ||
+            details.contains('10:'));
+
+    if (isAndroidConfigError) {
+      return const AppException(
+        'GOOGLE_WEB_CLIENT_ID is loaded, but this Android app is not '
+        'registered in Google Cloud OAuth. Create an Android OAuth client for '
+        'package com.example.maihongo_mb with this debug signing certificate.',
+      );
+    }
+
+    return AppException(
+      error.message?.trim().isNotEmpty == true
+          ? error.message!.trim()
+          : 'Google sign-in failed.',
+    );
+  }
 
   Future<AuthResponse> _saveAuthResponse(dynamic responseData) async {
     final data = ApiEnvelope.unwrapData(asJsonMap(responseData));

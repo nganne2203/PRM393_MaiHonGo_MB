@@ -25,14 +25,21 @@ class RegisterScreen extends ConsumerStatefulWidget {
 }
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
-  final _name = TextEditingController(text: 'Sakura San');
-  final _email = TextEditingController(
-    text: 'sakura_${DateTime.now().millisecondsSinceEpoch}@sakura.app',
-  );
-  final _password = TextEditingController(text: 'NewPassword123!');
-  final _confirmPassword = TextEditingController(text: 'NewPassword123!');
+  final _name = TextEditingController();
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
   bool _loading = false;
   String? _error;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _email.dispose();
+    _password.dispose();
+    _confirmPassword.dispose();
+    super.dispose();
+  }
 
   Future<void> _register() async {
     if (_password.text != _confirmPassword.text) {
@@ -175,10 +182,17 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _email = TextEditingController(text: 'hello@sakura.app');
-  final _password = TextEditingController(text: 'NewPassword123!');
+  final _email = TextEditingController();
+  final _password = TextEditingController();
   bool _loading = false;
   String? _error;
+
+  @override
+  void dispose() {
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
+  }
 
   Future<void> _login() async {
     setState(() {
