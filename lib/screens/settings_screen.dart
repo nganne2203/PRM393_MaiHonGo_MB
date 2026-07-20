@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 
 import '../core/localization/app_localizations.dart';
+import '../core/sync/sync_manager.dart';
 import '../features/settings/repositories/app_preferences_repository.dart';
 import '../features/settings/state/app_settings_controller.dart';
 import '../theme/app_theme.dart';
@@ -151,6 +152,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               context.tr('Manage downloaded lessons'),
               onTap: () => Navigator.pushNamed(context, '/offline-downloads'),
             ),
+            _navRow(
+              Icons.history_rounded,
+              AppColors.gold,
+              AppColors.goldSoft,
+              context.tr('Practice History'),
+              context.tr('Review quiz and practice results'),
+              onTap: _choosePracticeHistory,
+            ),
+            _navRow(
+              Icons.sync_rounded,
+              AppColors.matcha,
+              AppColors.matchaSoft,
+              context.tr('Sync now'),
+              context.tr('Upload pending learning activity'),
+              onTap: _saving ? null : _syncNow,
+            ),
             const SizedBox(height: 16),
             _section('ACCOUNT'),
             _navRow(
@@ -216,6 +233,66 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         padding: const EdgeInsets.fromLTRB(4, 0, 0, 8),
         child: Text(context.tr(s), style: context.overlineText),
       );
+
+  Future<void> _choosePracticeHistory() async {
+    final route = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: _surface,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.quiz_outlined),
+              title: Text(context.tr('Quiz History')),
+              onTap: () => Navigator.pop(sheetContext, '/quiz-history'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.headphones_rounded),
+              title: Text(context.tr('Listening History')),
+              onTap: () => Navigator.pop(sheetContext, '/listening-history'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.mic_none_rounded),
+              title: Text(context.tr('Speaking History')),
+              onTap: () => Navigator.pop(sheetContext, '/speaking-history'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_note_rounded),
+              title: Text(context.tr('Writing History')),
+              onTap: () => Navigator.pop(sheetContext, '/writing-history'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || route == null) return;
+    await Navigator.pushNamed(context, route);
+  }
+
+  Future<void> _syncNow() async {
+    setState(() {
+      _saving = true;
+      _message = null;
+    });
+    try {
+      final manager = await ref.read(syncManagerProvider.future);
+      final report = await manager.synchronize();
+      if (!mounted) return;
+      setState(() {
+        _message = report.succeeded
+            ? context.l10n.isVietnamese
+                ? 'Đồng bộ hoàn tất: ${report.syncedItems} mục.'
+                : 'Sync complete: ${report.syncedItems} items.'
+            : context.l10n.isVietnamese
+                ? 'Một số dữ liệu chưa thể đồng bộ. Ứng dụng sẽ tự thử lại.'
+                : 'Some data could not sync. The app will retry automatically.';
+      });
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   Widget _statusBanner(String message) => Container(
         padding: const EdgeInsets.all(12),
@@ -415,14 +492,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: context.tr('Study reminders from Monday to Friday.'),
             icon: Icons.work_outline_rounded,
           ),
-          _optionTile(
-            context,
-            value: 'streak',
-            selected: _settings.notificationPlan,
-            title: context.tr('Streak rescue'),
-            subtitle: context.tr('Only remind me when my streak needs saving.'),
-            icon: Icons.local_fire_department_outlined,
-          ),
         ],
       ),
     );
@@ -441,7 +510,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             _choiceTile(context, 'en', context.tr('English')),
             _choiceTile(context, 'vi', context.tr('Vietnamese')),
-            _choiceTile(context, 'ja', context.tr('Japanese')),
           ],
         ),
       ),

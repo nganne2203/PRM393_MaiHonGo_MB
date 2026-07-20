@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 
 import '../../../core/media/audio_player_service.dart';
 import '../../../core/media/recording_service.dart';
 import '../../../core/network/api_client.dart';
+import '../../progress/models/progress_models.dart';
+import '../../progress/repositories/progress_repository.dart';
 import '../repositories/speaking_repository.dart';
 import 'speaking_state.dart';
 
@@ -10,6 +14,7 @@ class SpeakingController extends ChangeNotifier {
   final SpeakingRepository repository;
   final RecordingService _recordingService;
   final AudioPlayerService _audioPlayerService;
+  final ProgressRepository progressRepository;
 
   SpeakingState _state = const SpeakingState.initial();
 
@@ -17,9 +22,11 @@ class SpeakingController extends ChangeNotifier {
     SpeakingRepository? repository,
     RecordingService? recordingService,
     AudioPlayerService? audioPlayerService,
+    ProgressRepository? progressRepository,
   })  : repository = repository ?? SpeakingRepository(),
         _recordingService = recordingService ?? RecordingService(),
-        _audioPlayerService = audioPlayerService ?? AudioPlayerService();
+        _audioPlayerService = audioPlayerService ?? AudioPlayerService(),
+        progressRepository = progressRepository ?? ProgressRepository();
 
   SpeakingState get state => _state;
 
@@ -141,12 +148,19 @@ class SpeakingController extends ChangeNotifier {
         clientAttemptId: 'speaking-${DateTime.now().microsecondsSinceEpoch}',
         syncSource: 'online',
       );
+      await _saveProgress(lessonId, attempt.similarityScore);
+      final isPending = attempt.status == 'pendingSync';
+      if (!isPending) {
+        final file = File(audioPath);
+        if (await file.exists()) await file.delete();
+      }
       _setState(_state.copyWith(
-        status: attempt.status == 'pendingSync'
+        status: isPending
             ? SpeakingViewStatus.offlineQueued
             : SpeakingViewStatus.success,
         latestAttempt: attempt,
-        message: attempt.status == 'pendingSync'
+        clearAudioPath: !isPending,
+        message: isPending
             ? 'Your speaking attempt will be evaluated when you are online.'
             : null,
       ));
@@ -156,6 +170,23 @@ class SpeakingController extends ChangeNotifier {
         message: ApiClient.describeError(error),
       ));
     }
+  }
+
+  Future<void> _saveProgress(String lessonId, int score) async {
+    try {
+      await progressRepository.updateProgress(
+        ProgressUpdateRequest(
+          lessonId: lessonId,
+          lastViewedVocabIndex: _state.selectedIndex,
+          completed: _state.selectedIndex >= _state.prompts.length - 1,
+          score: score,
+          practiceType: 'speaking',
+          completedSpeakingCount: 1,
+          totalPracticeScore: score,
+          clientUpdatedAt: DateTime.now(),
+        ),
+      );
+    } catch (_) {}
   }
 
   @visibleForTesting

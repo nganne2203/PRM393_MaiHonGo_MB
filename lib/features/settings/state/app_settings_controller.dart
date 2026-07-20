@@ -1,19 +1,27 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/notifications/study_notification_service.dart';
 import '../repositories/app_preferences_repository.dart';
 
 final appPreferencesRepositoryProvider =
     Provider<AppPreferencesRepository>((ref) => AppPreferencesRepository());
+final studyNotificationServiceProvider =
+    Provider<StudyNotificationService>((ref) => StudyNotificationService());
 
 final appSettingsControllerProvider =
     StateNotifierProvider<AppSettingsController, AsyncValue<AppSettings>>(
-  (ref) => AppSettingsController(ref.watch(appPreferencesRepositoryProvider)),
+  (ref) => AppSettingsController(
+    ref.watch(appPreferencesRepositoryProvider),
+    ref.watch(studyNotificationServiceProvider),
+  ),
 );
 
 class AppSettingsController extends StateNotifier<AsyncValue<AppSettings>> {
   final AppPreferencesRepository _repository;
+  final StudyNotificationService _notificationService;
 
-  AppSettingsController(this._repository) : super(const AsyncValue.loading()) {
+  AppSettingsController(this._repository, this._notificationService)
+      : super(const AsyncValue.loading()) {
     load();
   }
 
@@ -22,14 +30,22 @@ class AppSettingsController extends StateNotifier<AsyncValue<AppSettings>> {
   Future<void> load() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(_repository.getSettings);
+    final settings = state.valueOrNull;
+    if (settings != null) {
+      await _configureNotifications(settings);
+    }
   }
 
   Future<void> setDarkModeEnabled(bool enabled) {
     return _save(() => _repository.setDarkModeEnabled(enabled));
   }
 
-  Future<void> setNotificationsEnabled(bool enabled) {
-    return _save(() => _repository.setNotificationsEnabled(enabled));
+  Future<void> setNotificationsEnabled(bool enabled) async {
+    await _save(() => _repository.setNotificationsEnabled(enabled));
+    final settings = state.valueOrNull;
+    if (settings != null) {
+      await _configureNotifications(settings, requestPermission: enabled);
+    }
   }
 
   Future<void> setSoundEffectsEnabled(bool enabled) {
@@ -41,11 +57,11 @@ class AppSettingsController extends StateNotifier<AsyncValue<AppSettings>> {
   }
 
   Future<void> setReminderMinutes(int minutes) {
-    return _save(() => _repository.setReminderMinutes(minutes));
+    return _saveAndReschedule(() => _repository.setReminderMinutes(minutes));
   }
 
   Future<void> setNotificationPlan(String plan) {
-    return _save(() => _repository.setNotificationPlan(plan));
+    return _saveAndReschedule(() => _repository.setNotificationPlan(plan));
   }
 
   Future<void> setSoundEffectPack(String pack) {
@@ -72,5 +88,27 @@ class AppSettingsController extends StateNotifier<AsyncValue<AppSettings>> {
     final previous = current;
     state = AsyncValue.data(previous);
     state = await AsyncValue.guard(action);
+  }
+
+  Future<void> _saveAndReschedule(
+    Future<AppSettings> Function() action,
+  ) async {
+    await _save(action);
+    final settings = state.valueOrNull;
+    if (settings != null) await _configureNotifications(settings);
+  }
+
+  Future<void> _configureNotifications(
+    AppSettings settings, {
+    bool requestPermission = false,
+  }) async {
+    try {
+      await _notificationService.configure(
+        settings,
+        requestPermission: requestPermission,
+      );
+    } catch (_) {
+      // Settings remain saved even if the operating system rejects scheduling.
+    }
   }
 }

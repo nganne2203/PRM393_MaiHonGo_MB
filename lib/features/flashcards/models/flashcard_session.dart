@@ -59,6 +59,25 @@ class FlashcardSessionState {
     );
   }
 
+  factory FlashcardSessionState.resume(
+    List<Vocabulary> cards, {
+    required int currentIndex,
+    required Map<String, String> statuses,
+  }) {
+    return FlashcardSessionState(
+      cards: cards,
+      currentIndex: cards.isEmpty ? 0 : currentIndex.clamp(0, cards.length - 1),
+      statuses: {
+        for (final card in cards)
+          card.id: FlashcardAnswerStatus.values.firstWhere(
+            (status) => status.name == statuses[card.id],
+            orElse: () => FlashcardAnswerStatus.unseen,
+          ),
+      },
+      originalCards: cards,
+    );
+  }
+
   int get totalCards => cards.length;
   int get learnedCards => statuses.values
       .where((item) => item == FlashcardAnswerStatus.learned)

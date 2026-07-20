@@ -17,7 +17,11 @@ class AudioCacheService {
     return file.existsSync() ? file.path : null;
   }
 
-  Future<String> cacheRemoteAudio(String url) async {
+  Future<String> cacheRemoteAudio(
+    String url, {
+    CancelToken? cancelToken,
+    ProgressCallback? onReceiveProgress,
+  }) async {
     if (url.trim().isEmpty) {
       throw const ApiException('Audio is not available yet.');
     }
@@ -26,7 +30,12 @@ class AudioCacheService {
     if (await file.exists()) return file.path;
 
     await file.parent.create(recursive: true);
-    await dio.download(url, file.path);
+    await dio.download(
+      url,
+      file.path,
+      cancelToken: cancelToken,
+      onReceiveProgress: onReceiveProgress,
+    );
     return file.path;
   }
 

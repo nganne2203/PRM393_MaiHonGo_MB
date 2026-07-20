@@ -33,6 +33,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
   FlashcardSessionState? _session;
   int _resetToken = 0;
   bool _finishing = false;
+  bool _resumeAttempted = false;
 
   @override
   void initState() {
@@ -44,6 +45,9 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
               .read(vocabularyProvider.notifier)
               .loadVocabulary(lessonId: widget.lessonId);
         }
+        final cards =
+            widget.initialCards ?? ref.read(vocabularyProvider).vocabulary;
+        await _restoreResume(cards);
         await _loadBookmarks();
       },
     );
@@ -132,20 +136,31 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                                     .read(vocabularyProvider.notifier)
                                     .retry(),
                               ))
-                        : FlipFlashcard(
-                            key: ValueKey(currentCard?.id),
-                            kanji: currentCard?.word ?? '',
-                            kana: currentCard?.hiragana ?? '',
-                            romaji: currentCard?.romaji ?? '',
-                            meaning: currentCard?.meaningVi ?? '',
-                            example: currentCard == null
-                                ? ''
-                                : _example(currentCard).$1,
-                            exampleTr: currentCard == null
-                                ? ''
-                                : _example(currentCard).$2,
-                            audioUrl: currentCard?.audioUrl ?? '',
-                            resetToken: _resetToken,
+                        : GestureDetector(
+                            onHorizontalDragEnd: (details) {
+                              final velocity = details.primaryVelocity ?? 0;
+                              if (velocity.abs() < 250) return;
+                              _answerCurrent(
+                                velocity > 0
+                                    ? FlashcardAnswerStatus.notLearned
+                                    : FlashcardAnswerStatus.learned,
+                              );
+                            },
+                            child: FlipFlashcard(
+                              key: ValueKey(currentCard?.id),
+                              kanji: currentCard?.word ?? '',
+                              kana: currentCard?.hiragana ?? '',
+                              romaji: currentCard?.romaji ?? '',
+                              meaning: currentCard?.meaningVi ?? '',
+                              example: currentCard == null
+                                  ? ''
+                                  : _example(currentCard).$1,
+                              exampleTr: currentCard == null
+                                  ? ''
+                                  : _example(currentCard).$2,
+                              audioUrl: currentCard?.audioUrl ?? '',
+                              resetToken: _resetToken,
+                            ),
                           ),
               ),
             ),
@@ -226,6 +241,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
       _session = answered.moveNext();
       _resetToken += 1;
     });
+    await _saveResume();
   }
 
   void _retryCurrent() {
@@ -244,6 +260,11 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
     } catch (error) {
       _showMessage(ApiClient.describeError(error));
     }
+    try {
+      final repository =
+          await ref.read(flashcardSessionRepositoryProvider.future);
+      await repository.clearResume(_sessionKey(session.cards));
+    } catch (_) {}
 
     if (!mounted) return;
     setState(() => _finishing = false);
@@ -256,6 +277,43 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _restoreResume(List<Vocabulary> cards) async {
+    if (_resumeAttempted || cards.isEmpty) return;
+    _resumeAttempted = true;
+    try {
+      final repository =
+          await ref.read(flashcardSessionRepositoryProvider.future);
+      final resumed = await repository.loadResume(_sessionKey(cards), cards);
+      if (!mounted || resumed == null) return;
+      setState(() => _session = resumed);
+    } catch (_) {
+      // A missing resume record must not block the flashcard session.
+    }
+  }
+
+  Future<void> _saveResume() async {
+    final session = _session;
+    if (session == null || session.cards.isEmpty) return;
+    try {
+      final repository =
+          await ref.read(flashcardSessionRepositoryProvider.future);
+      await repository.saveResume(_sessionKey(session.cards), session);
+    } catch (_) {
+      // Resume persistence is best effort; the active session stays usable.
+    }
+  }
+
+  String _sessionKey(List<Vocabulary> cards) {
+    final lessonId = widget.lessonId;
+    if (lessonId != null && lessonId.isNotEmpty) return 'lesson:$lessonId';
+    final ids = cards
+        .map((item) => item.id)
+        .where((id) => id.isNotEmpty)
+        .toList()
+      ..sort();
+    return 'cards:${ids.join(',')}';
   }
 
   Future<void> _loadBookmarks() async {
@@ -291,7 +349,10 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
       if (wasSaved) {
         await _bookmarkRepository.removeBookmark(vocabulary.id);
       } else {
-        await _bookmarkRepository.addBookmark(vocabulary.id);
+        await _bookmarkRepository.addBookmark(
+          vocabulary.id,
+          vocabulary: vocabulary,
+        );
       }
     } catch (error) {
       if (!mounted) return;

@@ -149,8 +149,7 @@ class AppPreferencesRepository {
           const AppSettings.defaults().notificationsEnabled,
       soundEffectsEnabled: prefs.getBool(_soundEffectsKey) ??
           const AppSettings.defaults().soundEffectsEnabled,
-      languageCode: prefs.getString(_languageCodeKey) ??
-          const AppSettings.defaults().languageCode,
+      languageCode: _normalizeLanguageCode(prefs.getString(_languageCodeKey)),
       reminderMinutes: prefs.getInt(_reminderMinutesKey) ??
           const AppSettings.defaults().reminderMinutes,
       notificationPlan:
@@ -259,14 +258,18 @@ class AppPreferencesRepository {
     return current.copyWith(dailyStudyMinutes: normalized);
   }
 
-  static const _supportedLanguageCodes = {'en', 'vi', 'ja'};
-  static const _supportedNotificationPlans = {'daily', 'weekdays', 'streak'};
+  static const _supportedLanguageCodes = {'en', 'vi'};
+  static const _supportedNotificationPlans = {'daily', 'weekdays'};
   static const _supportedSoundEffectPacks = {'sakura', 'minimal', 'focus'};
 
   static String _normalizeNotificationPlan(String? plan) {
     return _supportedNotificationPlans.contains(plan)
         ? plan!
         : const AppSettings.defaults().notificationPlan;
+  }
+
+  static String _normalizeLanguageCode(String? code) {
+    return _supportedLanguageCodes.contains(code) ? code! : 'en';
   }
 
   static String _normalizeSoundEffectPack(String? pack) {

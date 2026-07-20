@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../../core/storage/local_database_service.dart';
 import '../data/speaking_local_store.dart';
 import '../models/speaking_models.dart';
 
@@ -11,21 +14,32 @@ class SpeakingRepository {
   final ApiClient apiClient;
   final SpeakingLocalStore localStore;
   final Connectivity connectivity;
+  final Future<LocalDatabaseService>? _localDatabase;
 
   SpeakingRepository({
     ApiClient? apiClient,
     SpeakingLocalStore? localStore,
     Connectivity? connectivity,
+    Future<LocalDatabaseService>? localDatabase,
   })  : apiClient = apiClient ?? ApiClient(),
         localStore = localStore ?? SpeakingLocalStore(),
-        connectivity = connectivity ?? Connectivity();
+        connectivity = connectivity ?? Connectivity(),
+        _localDatabase = localDatabase ?? LocalDatabaseService.open();
 
   Future<List<SpeakingPrompt>> getPrompts(String lessonId) async {
-    final response = await apiClient.dio.get(
-      '/speaking/prompts',
-      queryParameters: lessonId.isEmpty ? null : {'lessonId': lessonId},
-    );
-    return parsePromptListEnvelope(_asMap(response.data));
+    try {
+      final response = await apiClient.dio.get(
+        '/speaking/prompts',
+        queryParameters: lessonId.isEmpty ? null : {'lessonId': lessonId},
+      );
+      final prompts = parsePromptListEnvelope(_asMap(response.data));
+      if (lessonId.isNotEmpty) await _saveCachedPrompts(lessonId, prompts);
+      return prompts;
+    } catch (_) {
+      final cached = await _readCachedPrompts(lessonId);
+      if (cached.isNotEmpty) return cached;
+      rethrow;
+    }
   }
 
   Future<SpeakingPrompt> getPrompt(String id) async {
@@ -59,26 +73,79 @@ class SpeakingRepository {
       return SpeakingAttempt.pendingSync(pending);
     }
 
-    return _submitMultipart(
-      promptId: promptId,
-      lessonId: lessonId,
-      audioPath: audioPath,
-      clientAttemptId: clientAttemptId,
-      syncSource: syncSource,
-    );
+    try {
+      return await _submitMultipart(
+        promptId: promptId,
+        lessonId: lessonId,
+        audioPath: audioPath,
+        clientAttemptId: clientAttemptId,
+        syncSource: syncSource,
+      );
+    } catch (error) {
+      if (!_isRetryable(error)) rethrow;
+      final pending = PendingSpeakingAttempt(
+        promptId: promptId,
+        lessonId: lessonId,
+        audioPath: audioPath,
+        clientAttemptId: clientAttemptId,
+        syncSource: 'offline',
+        createdAt: DateTime.now(),
+      );
+      await localStore.addPendingAttempt(pending);
+      return SpeakingAttempt.pendingSync(pending);
+    }
   }
 
   Future<List<SpeakingAttempt>> getAttempts({String? lessonId}) async {
     final path = lessonId == null || lessonId.isEmpty
         ? '/speaking/attempts'
         : '/speaking/attempts/$lessonId';
-    final response = await apiClient.dio.get(path);
-    final remote = parseAttemptListEnvelope(_asMap(response.data));
     final pending = await localStore.loadPendingAttempts();
-    return [
-      ...pending.map(SpeakingAttempt.pendingSync),
-      ...remote,
-    ];
+    final filteredPending = lessonId == null || lessonId.isEmpty
+        ? pending
+        : pending.where((item) => item.lessonId == lessonId);
+    try {
+      final response = await apiClient.dio.get(path);
+      final remote = parseAttemptListEnvelope(_asMap(response.data));
+      return [
+        ...filteredPending.map(SpeakingAttempt.pendingSync),
+        ...remote,
+      ];
+    } catch (_) {
+      if (filteredPending.isNotEmpty) {
+        return filteredPending.map(SpeakingAttempt.pendingSync).toList();
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> _saveCachedPrompts(
+    String lessonId,
+    List<SpeakingPrompt> prompts,
+  ) async {
+    try {
+      final database = await _localDatabase;
+      await database?.savePracticeContent(
+        kind: 'speaking',
+        lessonId: lessonId,
+        items: prompts.map(_promptToJson).toList(),
+      );
+    } catch (_) {}
+  }
+
+  Future<List<SpeakingPrompt>> _readCachedPrompts(String lessonId) async {
+    if (lessonId.isEmpty) return const [];
+    try {
+      final database = await _localDatabase;
+      final items = await database?.getPracticeContent(
+            kind: 'speaking',
+            lessonId: lessonId,
+          ) ??
+          const [];
+      return items.map(SpeakingPrompt.fromJson).toList();
+    } catch (_) {
+      return const [];
+    }
   }
 
   Future<List<SpeakingAttempt>> syncPendingAttempts() async {
@@ -96,6 +163,8 @@ class SpeakingRepository {
           syncSource: 'offline',
         );
         await localStore.removePendingAttempt(pending.clientAttemptId);
+        final file = File(pending.audioPath);
+        if (await file.exists()) await file.delete();
         synced.add(attempt);
       } catch (_) {
         // Keep failed items queued; users can retry when auth/network is fixed.
@@ -170,6 +239,27 @@ class SpeakingRepository {
             ))
         .toList();
   }
+}
+
+Map<String, dynamic> _promptToJson(SpeakingPrompt prompt) => {
+      '_id': prompt.id,
+      'lessonId': prompt.lessonId,
+      'lessonTitle': prompt.lessonTitle,
+      'vocabId': prompt.vocabId,
+      'promptText': prompt.promptText,
+      'expectedText': prompt.expectedText,
+      'expectedReading': prompt.expectedReading,
+      'sampleAudioUrl': prompt.sampleAudioUrl,
+      'difficulty': prompt.difficulty,
+    };
+
+bool _isRetryable(Object error) {
+  if (error is! DioException) return false;
+  return error.response == null ||
+      error.type == DioExceptionType.connectionError ||
+      error.type == DioExceptionType.connectionTimeout ||
+      error.type == DioExceptionType.receiveTimeout ||
+      error.type == DioExceptionType.sendTimeout;
 }
 
 Map<String, dynamic> _asMap(dynamic value) {

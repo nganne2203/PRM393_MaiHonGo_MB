@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/services.dart';
 
 import 'core/localization/app_localizations.dart';
+import 'core/sync/sync_manager.dart';
 import 'features/auth/state/auth_state.dart';
 import 'features/settings/repositories/app_preferences_repository.dart';
 import 'features/settings/state/app_settings_controller.dart';
@@ -26,7 +27,11 @@ import 'screens/settings_screen.dart';
 import 'screens/privacy_security_screen.dart';
 import 'features/speaking/screens/speaking_practice_screen.dart';
 import 'features/listening/screens/listening_practice_screen.dart';
+import 'features/listening/screens/listening_history_screen.dart';
+import 'features/quiz/screens/quiz_history_screen.dart';
+import 'features/speaking/screens/speaking_history_screen.dart';
 import 'features/writing/screens/writing_practice_screen.dart';
+import 'features/writing/screens/writing_history_screen.dart';
 import 'features/offline/screens/offline_downloads_screen.dart';
 
 Future<void> main() async {
@@ -117,7 +122,7 @@ class SakuraApp extends ConsumerWidget {
               onBack: () => Navigator.pop(c),
             ),
         '/change-password': (_) => const ChangePasswordScreen(),
-        '/main': (_) => const MainShell(),
+        '/main': (_) => const SyncLifecycle(child: MainShell()),
         '/flashcard': (c) {
           final lessonId = ModalRoute.of(c)?.settings.arguments as String?;
           return FlashcardScreen(lessonId: lessonId);
@@ -157,6 +162,10 @@ class SakuraApp extends ConsumerWidget {
             }),
         '/privacy-security': (_) => const PrivacySecurityScreen(),
         '/offline-downloads': (_) => const OfflineDownloadsScreen(),
+        '/quiz-history': (_) => const QuizHistoryScreen(),
+        '/listening-history': (_) => const ListeningHistoryScreen(),
+        '/speaking-history': (_) => const SpeakingHistoryScreen(),
+        '/writing-history': (_) => const WritingHistoryScreen(),
         '/speaking': (c) {
           final args = ModalRoute.of(c)?.settings.arguments;
           if (args is SpeakingPracticeArgs) {
@@ -330,7 +339,14 @@ class _MainShellState extends State<MainShell> {
                   ),
                 ),
               )),
-      SavedScreen(onReview: () => Navigator.pushNamed(context, '/flashcard')),
+      SavedScreen(
+        onReview: (cards) => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FlashcardScreen(initialCards: cards),
+          ),
+        ),
+      ),
       ProfileScreen(
           onSettings: () => Navigator.pushNamed(context, '/settings')),
     ];
