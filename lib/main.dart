@@ -75,7 +75,7 @@ class SakuraApp extends ConsumerWidget {
     final isDark = settings.darkModeEnabled;
 
     return MaterialApp(
-      title: 'Sakura',
+      title: 'MaiHonGo',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
